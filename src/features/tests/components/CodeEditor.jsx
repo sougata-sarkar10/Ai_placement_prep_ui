@@ -4,49 +4,57 @@ import MonacoEditor from '@monaco-editor/react';
 function CodeEditor({ 
   selectedLanguage, 
   setSelectedLanguage, 
-  editorCode, // Used strictly as the initial values entry channel
+  editorCode, 
   onRun, 
   onSubmit, 
-  isCompiling 
+  isCompiling,
+  problemSlug = "general_sandbox" // Added to ensure unique persistence scopes per challenge
 }) {
-  // Create a persistent reference link to hold the active editor instance
   const editorRef = useRef(null);
 
-  // Instantly handle language/boilerplate syncs without forcing parent re-renders
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.setValue(editorCode);
-    }
-  }, [editorCode]);
-
-  // Capture the editor instance assembly hooks from Monaco
-  const handleEditorDidMount = (editor, monaco) => {
-    editorRef.current = editor;
+  // Read initial cache text from local storage if available, otherwise fallback to template boilerplate
+  const getCachedValue = () => {
+    return localStorage.getItem(`code_cache_${problemSlug}_${selectedLanguage}`) || editorCode;
   };
 
-  // Intermediate click interceptors pulling live values from the uncontrolled ref layer
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.setValue(getCachedValue());
+    }
+  }, [editorCode, selectedLanguage, problemSlug]);
+
+  const handleEditorDidMount = (editor, monaco) => {
+    editorRef.current = editor;
+    
+    // Wire up inline configuration monitoring to save keystrokes quietly in the background
+    editor.onDidChangeModelContent(() => {
+      const liveText = editor.getValue();
+      localStorage.setItem(`code_cache_${problemSlug}_${selectedLanguage}`, liveText);
+    });
+  };
+
   const handleRunIntercept = () => {
     if (editorRef.current) {
-      const liveCode = editorRef.current.getValue();
-      onRun(liveCode); // Pass code string straight to parent execution logic
+      onRun(editorRef.current.getValue());
     }
   };
 
   const handleSubmitIntercept = () => {
     if (editorRef.current) {
-      const liveCode = editorRef.current.getValue();
-      onSubmit(liveCode); // Pass code string straight to parent submission logic
+      onSubmit(editorRef.current.getValue());
     }
   };
 
   return (
     <div className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden h-full flex flex-col shadow-2xl">
-      {/* Upper Options Selection Control Header Block */}
       <div className="bg-slate-900 px-4 py-2 flex items-center justify-between border-b border-slate-800 flex-shrink-0">
         <div className="flex items-center gap-3">
           <select
             value={selectedLanguage}
-            onChange={(e) => setSelectedLanguage(e.target.value)}
+            onChange={(e) => {
+              setSelectedLanguage(e.target.value);
+              localStorage.setItem(`lang_cache_${problemSlug}`, e.target.value);
+            }}
             className="bg-slate-950 text-slate-300 border border-slate-800 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-cyan-500 cursor-pointer font-medium font-mono"
           >
             <option value="javascript">JavaScript</option>
@@ -56,7 +64,6 @@ function CodeEditor({
           </select>
         </div>
 
-        {/* Action Controls Cluster */}
         <div className="flex items-center gap-2">
           <button
             onClick={handleRunIntercept}
@@ -75,20 +82,19 @@ function CodeEditor({
         </div>
       </div>
 
-      {/* Editor Body Interface Frame */}
       <div className="flex-1 w-full bg-slate-950 pt-2">
         <MonacoEditor
           height="100%"
           language={selectedLanguage === 'cpp' ? 'cpp' : selectedLanguage === 'java' ? 'java' : selectedLanguage}
           theme="vs-dark"
-          defaultValue={editorCode}
-          onMount={handleEditorDidMount} // Mounts instance safely without triggering updates
+          defaultValue={getCachedValue()}
+          onMount={handleEditorDidMount}
           options={{
             fontSize: 13,
             fontFamily: 'Fira Code, JetBrains Mono, Monaco, Courier New, monospace',
             minimap: { enabled: false },
             scrollbar: { vertical: 'visible', horizontal: 'visible' },
-            automaticLayout: true, // Auto-adjust bounds instantly when layout panes shift
+            automaticLayout: true,
             tabSize: 4,
             cursorBlinking: 'smooth',
             cursorSmoothCaretAnimation: 'on',

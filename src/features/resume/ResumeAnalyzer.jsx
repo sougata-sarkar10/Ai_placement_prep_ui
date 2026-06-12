@@ -1,108 +1,207 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function ResumeAnalyzer() {
+  // Swapped to sessionStorage to ensure values reset instantly on a browser page refresh
   const [file, setFile] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState(null);
+  const [sector, setSector] = useState(() => sessionStorage.getItem('resume_sector_cache') || 'Fullstack Developer (MERN)');
+  const [jd, setJd] = useState(() => sessionStorage.getItem('resume_jd_cache') || '');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
+  const [result, setResult] = useState(() => {
+    const cachedResult = sessionStorage.getItem('resume_result_cache');
+    return cachedResult ? JSON.parse(cachedResult) : null;
+  });
 
-  const simulateAnalysis = (e) => {
+  useEffect(() => {
+    sessionStorage.setItem('resume_sector_cache', sector);
+    sessionStorage.setItem('resume_jd_cache', jd);
+    if (result) {
+      sessionStorage.setItem('resume_result_cache', JSON.stringify(result));
+    } else {
+      sessionStorage.removeItem('resume_result_cache');
+    }
+  }, [sector, jd, result]);
+
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!file) return;
+    if (!file) return setError('Please choose a valid PDF resume file first.');
+    
+    setLoading(true);
+    setError('');
 
-    setAnalyzing(true);
-    setResult(null);
+    const formData = new FormData();
+    formData.append('resume', file);
+    formData.append('targetSector', sector);
+    formData.append('jobDescription', jd);
 
-    setTimeout(() => {
-      setAnalyzing(false);
-      setResult({
-        score: 74,
-        strengths: ["Strong core projects using modern Node.js ecosystems", "Explicit usage of asynchronous database pipeline flows"],
-        gaps: ["Missing Cloud Platform deployment workflows (Render, AWS)", "No mentions of security protocols like CORS headers, HTTPS or rate limiting"],
-        questions: [
-          "Explain how you resolved CORS issues when launching your application server on Render.",
-          "Why is hashing credentials using Bcrypt structurally critical compared to raw text storage?"
-        ]
+    try {
+      const response = await fetch('http://localhost:5000/api/resume/analyze', {
+        method: 'POST',
+        body: formData
       });
-    }, 2000);
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error);
+
+      setResult(data.analysis);
+    } catch (err) {
+      setError(err.message || 'Server timed out handling document extraction loops.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-white">AI Profile Optimization Engine</h1>
-        <p className="text-slate-400 text-sm mt-1">Upload your engineering resume to calculate standard metric compliance profiles via Gemini LLM parsing.</p>
-      </div>
+  // --- RENDERING PHASE 1: View 1 - Document Dropzone & Settings Upload ---
+  if (!result) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6 text-slate-200 min-h-[calc(100vh-120px)] flex flex-col justify-center">
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-extrabold text-white tracking-tight sm:text-4xl">AI Resume Analyzer</h1>
+          <p className="text-sm text-slate-400 max-w-lg mx-auto">Upload your profile document and pinpoint keyword alignment caps instantly.</p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        {/* Upload Action Zone Container Card */}
-        <form onSubmit={simulateAnalysis} className="md:col-span-2 bg-slate-950 border border-slate-800 p-6 rounded-xl flex flex-col justify-between h-fit gap-6">
-          <div className="border-2 border-dashed border-slate-800 hover:border-slate-700 rounded-xl p-6 text-center transition-colors relative">
+        <form onSubmit={handleFormSubmit} className="bg-slate-950 border border-slate-850 p-6 sm:p-8 rounded-2xl space-y-6 shadow-2xl">
+          <div className="border-2 border-dashed border-slate-800 hover:border-cyan-500/40 rounded-xl p-6 text-center transition-all bg-slate-900/20 group relative cursor-pointer">
             <input 
               type="file" 
               accept=".pdf"
               onChange={(e) => setFile(e.target.files[0])}
-              className="absolute inset-0 opacity-0 cursor-pointer"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             />
-            <span className="text-3xl block mb-2">📁</span>
-            <p className="text-sm font-medium text-slate-300">
-              {file ? file.name : "Drag resume or browse"}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">Accepts raw PDF files only</p>
+            <div className="space-y-2 pointer-events-none">
+              <span className="text-3xl block group-hover:scale-110 transition-transform">📄</span>
+              <p className="text-xs font-semibold text-slate-300">
+                {file ? `Selected: ${file.name}` : 'Drag & drop your resume or click to browse'}
+              </p>
+              <p className="text-[10px] text-slate-500 font-mono">Supports machine-readable PDFs (Max 5MB)</p>
+            </div>
           </div>
 
-          <button
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+            <div className="sm:col-span-12 flex flex-col space-y-1.5">
+              <label className="text-xs font-mono font-bold text-slate-400">Target Career Path Sector</label>
+              <select 
+                value={sector}
+                onChange={(e) => setSector(e.target.value)}
+                className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs focus:outline-none focus:border-cyan-500 text-slate-300 font-medium cursor-pointer"
+              >
+                <option value="Frontend Engineer">Frontend Engineer</option>
+                <option value="Backend Developer">Backend Developer</option>
+                <option value="Fullstack Developer (MERN)">Fullstack Developer (MERN)</option>
+                <option value="DevOps & Cloud Specialist">DevOps & Cloud Specialist</option>
+                <option value="Data Scientist / ML Engineer">Data Scientist / ML Engineer</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex flex-col space-y-1.5">
+            <label className="text-xs font-mono font-bold text-slate-400">Context Job Description (Optional)</label>
+            <textarea 
+              value={jd}
+              onChange={(e) => setJd(e.target.value)}
+              placeholder="Paste specific role description constraints to unlock hyper-targeted matching scales..."
+              className="bg-slate-900 border border-slate-800 rounded-xl p-3 h-28 text-xs focus:outline-none focus:border-cyan-500 text-slate-300 resize-none font-sans"
+            />
+          </div>
+
+          <button 
             type="submit"
-            disabled={!file || analyzing}
-            className="w-full py-2.5 font-semibold bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 rounded-lg hover:from-emerald-400 hover:to-cyan-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            disabled={loading}
+            className="w-full bg-cyan-400 hover:bg-cyan-500 disabled:bg-slate-900 disabled:text-slate-600 disabled:cursor-not-allowed text-slate-950 font-bold py-3 rounded-xl text-xs transition-all shadow-lg font-sans uppercase tracking-wider cursor-pointer"
           >
-            {analyzing ? 'AI Parsing Running...' : 'Trigger AI Review'}
+            {loading ? 'Analyzing Content Matrix Metrics...' : '⚡ Launch ATS Audit Report'}
           </button>
+
+          {error && <div className="text-xs font-mono text-rose-400 bg-rose-500/5 border border-rose-500/10 p-3 rounded-xl text-center">{error}</div>}
         </form>
+      </div>
+    );
+  }
 
-        {/* AI Analytics Results Processing Pane */}
-        <div className="md:col-span-3 bg-slate-950 border border-slate-800 p-6 rounded-xl min-h-[300px]">
-          {analyzing && (
-            <div className="h-full flex flex-col items-center justify-center text-center space-y-3 pt-12">
-              <div className="w-8 h-8 border-4 border-t-emerald-400 border-slate-800 rounded-full animate-spin" />
-              <p className="text-sm font-mono text-slate-400">Gemini Parsing System mapping project indices...</p>
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-4 space-y-6 text-slate-200">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-900 pb-4">
+        <div className="space-y-1">
+          <button onClick={() => setResult(null)} className="text-xs text-slate-500 hover:text-cyan-400 transition-colors font-mono uppercase tracking-wider flex items-center gap-1 cursor-pointer">⏪ ← Back to Document Upload</button>
+          <h1 className="text-xl font-extrabold text-white tracking-tight">Audit Report Matrix</h1>
+          <p className="text-xs text-slate-500">Point-wise semantic summary optimization parameters for <span className="text-cyan-400 font-mono font-semibold">{sector}</span></p>
+        </div>
+
+        <div className="flex items-center gap-2 bg-slate-950 border border-slate-850 px-3 py-1.5 rounded-xl">
+          <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">Shift Sector:</span>
+          <select value={sector} onChange={(e) => { setSector(e.target.value); handleFormSubmit(e); }} className="bg-transparent text-slate-300 font-semibold text-xs focus:outline-none cursor-pointer font-sans">
+            <option value="Frontend Engineer">Frontend Engineer</option>
+            <option value="Backend Developer">Backend Developer</option>
+            <option value="Fullstack Developer (MERN)">Fullstack Developer</option>
+            <option value="DevOps & Cloud Specialist">DevOps Specialist</option>
+            <option value="Data Scientist / ML Engineer">ML Engineer</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="lg:col-span-4 space-y-4">
+          <div className="bg-slate-950 border border-slate-850 p-5 rounded-2xl flex flex-col items-center justify-center text-center shadow-xl space-y-3">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-slate-500">Compatibility Metric</span>
+            <div className="w-24 h-24 rounded-full border-4 border-slate-900 border-t-cyan-400 flex items-center justify-center font-mono text-3xl font-black text-cyan-400 bg-slate-900/40">{result.atsMatchScore}%</div>
+            <div>
+              <h2 className="text-xs font-bold text-slate-400 uppercase font-mono tracking-wide mt-1">Sector Fit Verdict</h2>
+              <p className="text-xs text-slate-300 leading-relaxed font-medium mt-1 font-sans">{result.sectorAlignment}</p>
             </div>
-          )}
+          </div>
 
-          {!analyzing && !result && (
-            <div className="h-full flex items-center justify-center text-center text-slate-500 text-sm pt-12">
-              Provide an engineering resume profile configuration to parse live assessment summaries.
+          <div className="bg-slate-950 border border-slate-850 p-4 rounded-xl space-y-3 shadow-md">
+            <div>
+              <h3 className="text-[10px] font-bold uppercase font-mono tracking-wider text-purple-400">🗣️ Document Tone Analysis</h3>
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed font-sans font-medium">{result.toneVoiceAnalysis}</p>
             </div>
-          )}
-
-          {result && (
-            <div className="space-y-6 animate-fade-in">
-              <div className="flex justify-between items-center border-b border-slate-800 pb-4">
-                <h3 className="font-semibold text-slate-200">Analysis Summary</h3>
-                <span className="text-2xl font-black text-amber-400 font-mono">{result.score}/100</span>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Identified Strengths</h4>
-                <ul className="text-sm text-slate-400 list-disc list-inside space-y-1">
-                  {result.strengths.map((s, i) => <li key={i}>{s}</li>)}
-                </ul>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider">Structural Keyword Gaps</h4>
-                <ul className="text-sm text-slate-400 list-disc list-inside space-y-1">
-                  {result.gaps.map((g, i) => <li key={i}>{g}</li>)}
-                </ul>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Tailored Mock Questions</h4>
-                <ul className="text-sm text-slate-300 space-y-2 italic">
-                  {result.questions.map((q, i) => <li key={i} className="bg-slate-900 p-2.5 rounded border border-slate-800">"{q}"</li>)}
-                </ul>
-              </div>
+            <hr className="border-slate-900" />
+            <div>
+              <h3 className="text-[10px] font-bold uppercase font-mono tracking-wider text-emerald-400">📈 Next Path Prediction</h3>
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed font-sans font-medium">{result.careerPathPrediction}</p>
             </div>
-          )}
+          </div>
+
+          <div className="bg-slate-950 border border-slate-850 p-4 rounded-xl space-y-2 shadow-md">
+            <h3 className="text-[10px] font-bold uppercase font-mono tracking-wider text-slate-400">✓ Detected Core Competencies</h3>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {result.foundSkills?.map((skill, i) => (
+                <span key={i} className="bg-slate-900 border border-slate-800 text-slate-300 px-2.5 py-1 rounded-md text-[10px] font-mono font-medium">{skill}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-8 space-y-4">
+          <div className="bg-slate-950 border border-slate-850 p-5 rounded-2xl space-y-3 shadow-xl">
+            <h3 className="text-xs font-bold uppercase font-mono tracking-wider text-amber-400 flex items-center gap-1.5">⚠️ Missing Structural Keywords</h3>
+            <ul className="space-y-2">
+              {result.keywordGapAnalysis?.map((gap, i) => (
+                <li key={i} className="text-xs text-slate-300 font-sans font-medium flex items-start gap-2 bg-slate-900/40 p-2.5 border border-slate-900 rounded-lg"><span className="text-amber-500 font-bold">•</span> {gap}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="bg-slate-950 border border-slate-850 p-5 rounded-2xl space-y-3 shadow-xl">
+            <h3 className="text-xs font-bold uppercase font-mono tracking-wider text-rose-400 flex items-center gap-1.5">📋 Layout & Bullet Critiques</h3>
+            <ul className="space-y-2">
+              {result.formattingCritique?.map((crit, i) => (
+                <li key={i} className="text-xs text-slate-300 font-sans font-medium flex items-start gap-2 bg-slate-900/40 p-2.5 border border-slate-900 rounded-lg"><span className="text-rose-500 font-bold">•</span> {crit}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="bg-slate-950 border border-slate-850 p-5 rounded-2xl space-y-3 shadow-xl">
+            <h3 className="text-xs font-bold uppercase font-mono tracking-wider text-cyan-400 flex items-center gap-1.5">✨ AI Experience Re-Writer Sandbox</h3>
+            <div className="space-y-3">
+              {result.bulletRewrites?.map((rw, i) => (
+                <div key={i} className="bg-slate-900/40 border border-slate-900 p-4 rounded-xl space-y-2 font-mono text-[11px] leading-relaxed">
+                  <div className="text-slate-500 flex items-start gap-1"><span className="text-rose-500 font-bold font-sans">❌ Before:</span> "{rw.original}"</div>
+                  <div className="text-emerald-400 font-semibold flex items-start gap-1"><span className="text-emerald-500 font-bold font-sans">✅ Enhanced:</span> "{rw.suggested}"</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,48 +1,93 @@
 import React, { useState, useEffect } from 'react';
 
 function AptitudeTest() {
-  // Navigation & Selection States
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState(null);
-  
-  // Database Query States
-  const [questions, setQuestions] = useState([]);
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [loading, setLoading] = useState(false);
-  
-  // Interactive Score Validation States
-  const [chosenOption, setChosenOption] = useState(null);
-  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
-  const [showSolution, setShowSolution] = useState(false);
+  // Swapped to sessionStorage to clear everything automatically upon hitting browser refresh
+  const [category, setCategory] = useState(() => sessionStorage.getItem('apti_category_cache'));
+  const [topic, setTopic] = useState(() => sessionStorage.getItem('apti_topic_cache')); 
+  const [difficulty, setDifficulty] = useState(() => sessionStorage.getItem('apti_difficulty_cache'));
 
-  // Core Main Aptitude Category Schema Configuration
-  const categories = [
-    { id: 'quant', label: 'Quantitative Aptitude', subtitle: 'Numerical Ability', icon: '🔢', active: true },
-    { id: 'logical', label: 'Logical Reasoning', subtitle: 'Analytical Ability', icon: '🧠', active: false },
-    { id: 'verbal', label: 'Verbal Ability', subtitle: 'English Comprehension', icon: '📝', active: false },
-    { id: 'di', label: 'Data Interpretation', subtitle: 'Analysis & Charts', icon: '📊', active: false },
-    { id: 'abstract', label: 'Abstract Reasoning', subtitle: 'Non-Verbal Logic', icon: '🧩', active: false },
-    { id: 'technical', label: 'Technical Aptitude', subtitle: 'Programming & AIML', icon: '💻', active: false },
+  const [questions, setQuestions] = useState(() => {
+    const saved = sessionStorage.getItem('apti_questions_cache');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [currentIdx, setCurrentIdx] = useState(() => {
+    return parseInt(sessionStorage.getItem('apti_currentIdx_cache') || '0', 10);
+  });
+  const [loading, setLoading] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isShuffleActive, setIsShuffleActive] = useState(() => {
+    return sessionStorage.getItem('apti_shuffle_cache') === 'true';
+  });
+
+  const [chosenOption, setChosenOption] = useState(() => sessionStorage.getItem('apti_chosen_cache'));
+  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(() => {
+    return sessionStorage.getItem('apti_submitted_cache') === 'true';
+  });
+  const [showSolution, setShowSolution] = useState(() => {
+    return sessionStorage.getItem('apti_solution_cache') === 'true';
+  });
+
+  const categoriesList = [
+    { id: 'quantitative', label: 'Quantitative Aptitude', subtitle: 'Numerical & Mathematical Ability', icon: '🔢' },
+    { id: 'logical-reasoning', label: 'Logical Reasoning', subtitle: 'Analytical & Diagrammatic Logic', icon: '🧠' },
+    { id: 'verbal', label: 'Verbal Ability', subtitle: 'English Language & Comprehension', icon: '📝' },
   ];
 
-  // Fetch Questions from Express API when Category & Difficulty are finalized
+  const quantTopics = [
+    "Percentages", "Profit and Loss", "Time and Work", "Time and Distance",
+    "Ratios and Proportions", "Averages", "Interest", "Number Systems",
+    "Permutations and Combinations", "Probability", "Mensuration"
+  ];
+
   useEffect(() => {
-    if (selectedCategory === 'quant' && selectedDifficulty) {
+    if (category) sessionStorage.setItem('apti_category_cache', category);
+    else sessionStorage.removeItem('apti_category_cache');
+
+    if (topic) sessionStorage.setItem('apti_topic_cache', topic);
+    else sessionStorage.removeItem('apti_topic_cache');
+
+    if (difficulty) sessionStorage.setItem('apti_difficulty_cache', difficulty);
+    else sessionStorage.removeItem('apti_difficulty_cache');
+
+    sessionStorage.setItem('apti_questions_cache', JSON.stringify(questions));
+    sessionStorage.setItem('apti_currentIdx_cache', currentIdx.toString());
+    sessionStorage.setItem('apti_shuffle_cache', isShuffleActive.toString());
+    sessionStorage.setItem('apti_submitted_cache', isAnswerSubmitted.toString());
+    sessionStorage.setItem('apti_solution_cache', showSolution.toString());
+
+    if (chosenOption) sessionStorage.setItem('apti_chosen_cache', chosenOption);
+    else sessionStorage.removeItem('apti_chosen_cache');
+  }, [category, topic, difficulty, questions, currentIdx, isShuffleActive, chosenOption, isAnswerSubmitted, showSolution]);
+
+  useEffect(() => {
+    const isReadyToFetch = category && (category !== 'quantitative' || topic) && difficulty;
+
+    if (isReadyToFetch && questions.length === 0) {
       setLoading(true);
-      fetch(`http://localhost:5000/api/tests/aptitude?difficulty=${selectedDifficulty}`)
-        .then((res) => res.json())
-        .then((data) => {
+      
+      const mappedDiff = difficulty === 'Basic' ? 'easy' : difficulty === 'Intermediate' ? 'medium' : 'advanced';
+      let url = `http://localhost:5000/api/tests/aptitude?category=${category}&difficulty=${mappedDiff}`;
+      if (category === 'quantitative' && topic) {
+        url += `&topic=${encodeURIComponent(topic)}`;
+      }
+
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
           setQuestions(data);
           setCurrentIdx(0);
           resetInteractiveState();
+          setIsShuffleActive(false);
+          setSearchQuery('');
           setLoading(false);
         })
-        .catch((err) => {
-          console.error("Database connection failure:", err);
+        .catch(err => {
+          console.error("API Transmission Fault:", err);
           setLoading(false);
         });
     }
-  }, [selectedCategory, selectedDifficulty]);
+  }, [category, topic, difficulty]);
 
   const resetInteractiveState = () => {
     setChosenOption(null);
@@ -50,51 +95,61 @@ function AptitudeTest() {
     setShowSolution(false);
   };
 
-  const handleOptionClick = (option) => {
-    if (isAnswerSubmitted) return; // Lock choices once submitted
-    setChosenOption(option);
+  const handleBackReset = () => {
+    setQuestions([]);
+    setCurrentIdx(0);
+    resetInteractiveState();
+    setIsShuffleActive(false);
+    sessionStorage.removeItem('apti_questions_cache');
+    
+    if (difficulty) setDifficulty(null);
+    else if (topic) setTopic(null);
+    else if (category) setCategory(null);
   };
 
-  const handleSubmitAnswer = () => {
-    setIsAnswerSubmitted(true);
-  };
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    const targetNum = parseInt(searchQuery, 10);
+    if (isNaN(targetNum)) return;
 
-  const handleNext = () => {
-    if (currentIdx + 1 < questions.length) {
-      setCurrentIdx((prev) => prev + 1);
+    const matchedIndex = questions.findIndex(q => q.questionNumber === targetNum);
+    if (matchedIndex !== -1) {
+      setCurrentIdx(matchedIndex);
       resetInteractiveState();
+    } else {
+      alert(`Question #${targetNum} could not be located inside this active filter subset array.`);
     }
   };
 
-  // --- RENDERING PHASE 1: Main Category Selection Menu Grid ---
-  if (!selectedCategory) {
+  const toggleShuffleOrder = () => {
+    const backupArray = [...questions];
+    if (!isShuffleActive) {
+      backupArray.sort(() => Math.random() - 0.5);
+      setQuestions(backupArray);
+      setIsShuffleActive(true);
+    } else {
+      backupArray.sort((a, b) => a.questionNumber - b.questionNumber);
+      setQuestions(backupArray);
+      setIsShuffleActive(false);
+    }
+    setCurrentIdx(0);
+    resetInteractiveState();
+  };
+
+  if (!category) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 animate-fadeIn">
         <div>
-          <h1 className="text-2xl font-bold text-white">Aptitude Training Ground</h1>
-          <p className="text-slate-400 text-sm mt-1">Select a core syllabus competency area to begin preparation.</p>
+          <h1 className="text-2xl font-extrabold text-white tracking-tight">Aptitude Training Ground</h1>
+          <p className="text-xs text-slate-400">Select a core syllabus competency area to begin placement preparation.</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => cat.active && setSelectedCategory(cat.id)}
-              className={`text-left p-6 rounded-xl border bg-slate-950 transition-all group ${
-                cat.active 
-                  ? 'border-slate-800 hover:border-cyan-500/50 cursor-pointer shadow-lg' 
-                  : 'border-slate-900 opacity-40 cursor-not-allowed'
-              }`}
-            >
-              <div className="text-3xl mb-4 bg-slate-900 w-12 h-12 flex items-center justify-center rounded-lg border border-slate-800 group-hover:border-cyan-500/20">
-                {cat.icon}
-              </div>
-              <h3 className="font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">{cat.label}</h3>
-              <p className="text-xs text-slate-500 mt-1">{cat.subtitle}</p>
-              {cat.active && (
-                <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded mt-3 inline-block tracking-wider">
-                  Live Dataset
-                </span>
-              )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {categoriesList.map(cat => (
+            <button key={cat.id} onClick={() => setCategory(cat.id)} className="text-left p-5 border border-slate-850 bg-slate-950 hover:border-cyan-500/40 rounded-xl shadow-xl group transition-all cursor-pointer">
+              <div className="text-2xl mb-3 bg-slate-900 w-10 h-10 flex items-center justify-center rounded-lg border border-slate-800 group-hover:border-cyan-500/10">{cat.icon}</div>
+              <h3 className="font-bold text-slate-200 group-hover:text-cyan-400 text-sm transition-colors">{cat.label}</h3>
+              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed font-medium">{cat.subtitle}</p>
+              <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/10 mt-4 inline-block">Live Dataset</span>
             </button>
           ))}
         </div>
@@ -102,34 +157,36 @@ function AptitudeTest() {
     );
   }
 
-  // --- RENDERING PHASE 2: Difficulty Tier Selection Dashboard ---
-  if (selectedCategory === 'quant' && !selectedDifficulty) {
+  if (category === 'quantitative' && !topic) {
     return (
-      <div className="space-y-6">
-        <button 
-          onClick={() => setSelectedCategory(null)}
-          className="text-xs text-cyan-400 hover:underline cursor-pointer flex items-center gap-1"
-        >
-          ← Back to Main Menu
-        </button>
+      <div className="space-y-6 animate-fadeIn">
+        <button onClick={handleBackReset} className="text-xs text-slate-500 hover:text-cyan-400 font-mono uppercase tracking-wider cursor-pointer">← Back to Categories</button>
         <div>
-          <h1 className="text-2xl font-bold text-white">Quantitative Aptitude</h1>
-          <p className="text-slate-400 text-sm mt-1">Select your target assessment complexity configuration.</p>
+          <h1 className="text-xl font-extrabold text-white">Quantitative Analytics Hub</h1>
+          <p className="text-xs text-slate-500">Pick a specific target chapter module to isolate preparation criteria.</p>
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {quantTopics.map(t => (
+            <button key={t} onClick={() => setTopic(t)} className="text-left p-3.5 bg-slate-950 border border-slate-850 hover:border-cyan-500 rounded-xl transition-all cursor-pointer text-xs font-semibold text-slate-300 hover:text-cyan-400">📊 {t}</button>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {['Basic', 'Intermediate', 'Advanced'].map((tier) => (
-            <button
-              key={tier}
-              onClick={() => setSelectedDifficulty(tier)}
-              className="text-center p-8 bg-slate-950 border border-slate-800 hover:border-cyan-500 rounded-xl transition-all shadow-md group cursor-pointer"
-            >
-              <h3 className="text-lg font-bold text-slate-200 group-hover:text-cyan-400 uppercase tracking-wide">
-                {tier === 'Advance' ? 'Advanced' : tier} Round
-              </h3>
-              <p className="text-xs text-slate-500 mt-2 font-mono">
-                {tier === 'Basic' ? '300 Injected Questions' : 'Repository Sync Imminent'}
-              </p>
+  if (!difficulty) {
+    return (
+      <div className="space-y-6 animate-fadeIn">
+        <button onClick={handleBackReset} className="text-xs text-slate-500 hover:text-cyan-400 font-mono uppercase tracking-wider cursor-pointer">← Back to Previous Selection</button>
+        <div>
+          <h1 className="text-xl font-extrabold text-white">Select Assessment Complexity</h1>
+          <p className="text-xs text-slate-500">Isolate problems based on difficulty tiers.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {['Basic', 'Intermediate', 'Advanced'].map(tier => (
+            <button key={tier} onClick={() => setDifficulty(tier)} className="text-center p-6 bg-slate-950 border border-slate-850 hover:border-cyan-500 rounded-xl transition-all shadow-md group cursor-pointer">
+              <h3 className="text-xs font-bold text-slate-300 group-hover:text-cyan-400 uppercase tracking-widest font-mono">{tier} Practice Round</h3>
+              <p className="text-[10px] text-slate-600 font-mono mt-1">Repository streams verified online.</p>
             </button>
           ))}
         </div>
@@ -137,23 +194,20 @@ function AptitudeTest() {
     );
   }
 
-  // --- RENDERING PHASE 3: Loading States ---
   if (loading) {
     return (
-      <div className="h-64 flex flex-col items-center justify-center text-center space-y-3">
-        <div className="w-8 h-8 border-4 border-t-cyan-400 border-slate-800 rounded-full animate-spin" />
-        <p className="text-sm font-mono text-slate-400">Filtering database pipelines for {selectedDifficulty} sets...</p>
+      <div className="h-64 flex flex-col items-center justify-center text-center space-y-2">
+        <div className="w-6 h-6 border-2 border-t-cyan-400 border-slate-800 rounded-full animate-spin" />
+        <p className="text-xs font-mono text-slate-500">Filtering collection frames for database metrics...</p>
       </div>
     );
   }
 
   if (questions.length === 0) {
     return (
-      <div className="text-center p-12 bg-slate-950 border border-slate-800 rounded-xl max-w-md mx-auto space-y-4">
-        <p className="text-slate-400 text-sm">No data entries matched this target filter index.</p>
-        <button onClick={() => setSelectedDifficulty(null)} className="text-xs text-cyan-400 hover:underline cursor-pointer">
-          Select Another Tier
-        </button>
+      <div className="text-center p-8 bg-slate-950 border border-slate-850 rounded-xl max-w-sm mx-auto space-y-3">
+        <p className="text-xs text-slate-400 font-mono">No data matched this filter criteria array.</p>
+        <button onClick={() => setDifficulty(null)} className="text-xs text-cyan-400 font-semibold hover:underline cursor-pointer">Change Filters</button>
       </div>
     );
   }
@@ -161,103 +215,69 @@ function AptitudeTest() {
   const currentQuestion = questions[currentIdx];
 
   return (
-    <div className="max-w-3xl mx-auto bg-slate-950 border border-slate-800 rounded-xl p-8 space-y-8 shadow-2xl">
-      {/* Session Breadcrumbs Meta Info */}
-      <div className="flex justify-between items-center border-b border-slate-800 pb-4">
-        <button 
-          onClick={() => setSelectedDifficulty(null)}
-          className="text-xs text-slate-500 hover:text-cyan-400 transition-colors font-semibold uppercase tracking-wider cursor-pointer"
-        >
-          ⏮ Leave Test Block
-        </button>
-        <span className="text-xs font-mono text-slate-500">
-          Problem {currentIdx + 1} of {questions.length}
-        </span>
+    <div className="max-w-4xl mx-auto bg-slate-950 border border-slate-850 rounded-2xl p-6 space-y-6 shadow-2xl animate-fadeIn">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-900 pb-4">
+        <button onClick={handleBackReset} className="text-xs text-slate-500 hover:text-cyan-400 font-mono uppercase tracking-wider cursor-pointer">⏮ Leave Test Block</button>
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <button onClick={toggleShuffleOrder} className={`px-3 py-1.5 border rounded-xl font-mono text-[11px] font-bold cursor-pointer transition-all ${isShuffleActive ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'}`}>{isShuffleActive ? '🔀 Shuffle Mode Enabled' : '🔢 Order: Sequential'}</button>
+          <form onSubmit={handleSearchSubmit} className="flex items-center bg-slate-900 border border-slate-800 rounded-xl overflow-hidden px-2.5 py-1">
+            <span className="text-slate-600 text-xs font-mono font-bold mr-1">Q#</span>
+            <input type="text" placeholder="Jump to..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent text-xs text-slate-300 font-mono focus:outline-none w-16" />
+            <button type="submit" className="text-slate-400 hover:text-cyan-400 text-xs font-bold cursor-pointer font-sans px-1">➔</button>
+          </form>
+        </div>
       </div>
 
-      {/* Challenge Question Field */}
-      <div className="text-lg font-medium text-slate-100 leading-relaxed whitespace-pre-wrap bg-slate-900/30 p-5 rounded-xl border border-slate-900/60">
-        {currentQuestion.questionText}
+      <div className="flex justify-between items-center text-xs font-mono text-slate-500 px-1">
+        <span>Chapter: <span className="text-slate-400 font-semibold font-sans">{topic || "General Reasoning"}</span></span>
+        <span>Array Tracking: {currentIdx + 1} / {questions.length} (Ref ID: #{currentQuestion.questionNumber})</span>
       </div>
 
-      {/* Color-Coded Multi-Choice Grid Panels */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="text-sm sm:text-base font-semibold text-slate-100 leading-relaxed whitespace-pre-wrap bg-slate-900/20 p-5 rounded-xl border border-slate-900/60 font-sans shadow-inner">
+        <span className="text-cyan-500 font-mono mr-1">{currentQuestion.questionNumber}.</span> {currentQuestion.questionText}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         {currentQuestion.options?.map((option, idx) => {
-          const isThisOptionChosen = chosenOption === option;
-          const isThisOptionCorrect = option === currentQuestion.correctAnswer;
+          const isChosen = chosenOption === option;
+          const isCorrect = option === currentQuestion.correctAnswer;
+          let optionStyle = "border-slate-850 bg-slate-900/30 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60";
 
-          // Compute style rules dynamically based on verification status
-          let borderStyles = "border-slate-800 bg-slate-900/50 text-slate-300 hover:border-slate-700 hover:bg-slate-900";
-          
-          if (!isAnswerSubmitted && isThisOptionChosen) {
-            // Selected but unsubmitted state: Slate/Blue Highlight
-            borderStyles = "bg-cyan-500/10 border-cyan-400 text-cyan-300";
-          } else if (isAnswerSubmitted) {
-            if (isThisOptionCorrect) {
-              // ALWAYS highlight the correct answer in Green once submitted
-              borderStyles = "bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-md shadow-emerald-950/20";
-            } else if (isThisOptionChosen && !isThisOptionCorrect) {
-              // If user selected this wrong choice, color it Red
-              borderStyles = "bg-rose-500/10 border-rose-500 text-rose-400 shadow-md shadow-rose-950/20";
-            } else {
-              // Unselected wrong choices become translucent
-              borderStyles = "border-slate-900 bg-slate-950 text-slate-600 opacity-50 cursor-not-allowed";
-            }
+          if (!isAnswerSubmitted && isChosen) optionStyle = "bg-cyan-500/5 border-cyan-400 text-cyan-400 font-semibold shadow-inner";
+          else if (isAnswerSubmitted) {
+            if (isCorrect) optionStyle = "bg-emerald-500/10 border-emerald-500 text-emerald-400 font-bold";
+            else if (isChosen && !isCorrect) optionStyle = "bg-rose-500/10 border-rose-500 text-rose-400 font-bold";
+            else optionStyle = "border-slate-900 bg-slate-950 text-slate-600 opacity-40 cursor-not-allowed";
           }
 
           return (
-            <button
-              key={idx}
-              onClick={() => handleOptionClick(option)}
-              disabled={isAnswerSubmitted}
-              className={`w-full text-left px-5 py-4 rounded-xl border transition-all text-sm font-medium flex justify-between items-center ${borderStyles} ${!isAnswerSubmitted ? 'cursor-pointer' : ''}`}
-            >
-              <span>{option}</span>
-              <div className="w-5 h-5 rounded-full border border-slate-700 flex items-center justify-center font-bold text-xs">
-                {isAnswerSubmitted && isThisOptionCorrect && "✓"}
-                {isAnswerSubmitted && isThisOptionChosen && !isThisOptionCorrect && "✗"}
+            <button key={idx} onClick={() => !isAnswerSubmitted && setChosenOption(option)} disabled={isAnswerSubmitted} className={`w-full text-left px-4 py-3.5 rounded-xl border transition-all text-xs font-medium flex justify-between items-center ${optionStyle} ${!isAnswerSubmitted ? 'cursor-pointer' : ''}`}>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-black text-slate-500 bg-slate-900 border border-slate-850 px-1.5 py-0.5 rounded">{String.fromCharCode(65 + idx)}</span>
+                <span>{option}</span>
+              </div>
+              <div className="w-4 h-4 rounded-full border border-slate-800 flex items-center justify-center text-[10px] font-black">
+                {isAnswerSubmitted && isCorrect && "✓"}
+                {isAnswerSubmitted && isChosen && !isCorrect && "✗"}
               </div>
             </button>
           );
         })}
       </div>
 
-      {/* Control Actions Row Panel */}
-      <div className="flex justify-between items-center pt-6 border-t border-slate-800">
-        <button
-          onClick={() => setShowSolution(!showSolution)}
-          disabled={!isAnswerSubmitted}
-          className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 border border-slate-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-        >
-          {showSolution ? 'Hide Solution ▲' : 'View Breakdown 👁️‍🗨️'}
-        </button>
-
+      <div className="flex justify-between items-center pt-4 border-t border-slate-900">
+        <button onClick={() => setShowSolution(!showSolution)} disabled={!isAnswerSubmitted} className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-slate-500 hover:text-slate-300 border border-slate-900 disabled:opacity-20 cursor-pointer">{showSolution ? 'Hide Solution ▲' : 'View IndiaBIX Solution 👁️‍'}</button>
         {!isAnswerSubmitted ? (
-          <button
-            onClick={handleSubmitAnswer}
-            disabled={!chosenOption}
-            className="px-6 py-2.5 rounded-lg font-semibold bg-cyan-500 text-slate-950 hover:bg-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-          >
-            Submit Answer
-          </button>
+          <button onClick={() => setIsAnswerSubmitted(true)} disabled={!chosenOption} className="px-6 py-1.5 rounded-lg font-bold bg-cyan-400 text-slate-950 hover:bg-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed text-xs cursor-pointer transition-all uppercase tracking-wider font-sans">Verify Choice</button>
         ) : (
-          <button
-            onClick={handleNext}
-            disabled={currentIdx + 1 === questions.length}
-            className="px-6 py-2.5 rounded-lg font-semibold bg-slate-100 text-slate-950 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-          >
-            Next Problem →
-          </button>
+          <button onClick={() => { if (currentIdx + 1 < questions.length) { setCurrentIdx(prev => prev + 1); resetInteractiveState(); } }} disabled={currentIdx + 1 === questions.length} className="px-6 py-1.5 rounded-lg font-bold bg-slate-100 text-slate-950 hover:bg-white disabled:opacity-20 text-xs cursor-pointer transition-all uppercase tracking-wider font-sans">Next Question ➔</button>
         )}
       </div>
 
-      {/* Dynamic Explanation Drawer Overlay */}
       {showSolution && currentQuestion.explanation && (
-        <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-5 space-y-2 animate-fade-in">
-          <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">Solution Logic</h4>
-          <p className="text-sm text-slate-300 font-mono whitespace-pre-wrap leading-relaxed bg-slate-950 p-4 rounded-lg border border-slate-900">
-            {currentQuestion.explanation}
-          </p>
+        <div className="bg-slate-900/40 border border-slate-900 p-4 rounded-xl space-y-1.5 animate-fadeIn shadow-inner">
+          <h4 className="text-[10px] font-bold text-cyan-400 uppercase font-mono tracking-wider">Solution Logic Breakdown</h4>
+          <p className="text-xs text-slate-300 font-mono whitespace-pre-wrap leading-relaxed bg-slate-950 p-3 border border-slate-900 rounded-lg shadow-sm">{currentQuestion.explanation}</p>
         </div>
       )}
     </div>
