@@ -4,6 +4,8 @@ import ProblemDescription from './components/ProblemDescription';
 import CodeEditor from './components/CodeEditor';
 import OutputConsole from './components/OutputConsole';
 
+import { API_BASE_URL } from "../../config/api";
+
 function CodingSandbox() {
   // Navigation Routing States
   const [problems, setProblems] = useState([]);
