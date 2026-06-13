@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import MonacoEditor from '@monaco-editor/react';
 
-import { API_BASE_URL } from '../../../config/api'; // 👑 Step 1: Import the dynamic URL
+import { API_BASE_URL } from '../../config/api'; // 👑 Step 1: Import the dynamic URL
 
 // Inside your challenges loader:
 useEffect(() => {
