@@ -1,6 +1,27 @@
 import React, { useRef, useEffect } from 'react';
 import MonacoEditor from '@monaco-editor/react';
 
+import { API_BASE_URL } from '../../config/api'; // 👑 Step 1: Import the dynamic URL
+
+// Inside your challenges loader:
+useEffect(() => {
+  // CHANGED: Dynamic variable string injection
+  fetch(`${API_BASE_URL}/api/challenges`)
+    .then(res => res.json())
+    .then(data => setChallenges(data))
+    .catch(err => console.error("Pipeline Synchronizer Interrupted:", err));
+}, []);
+
+// Inside your code runner execution block:
+const runCode = async () => {
+  // CHANGED: Switch your POST endpoint mapping as well
+  const res = await fetch(`${API_BASE_URL}/api/code/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ language, code, input, problemSlug })
+  });
+};
+
 function CodeEditor({ 
   selectedLanguage, 
   setSelectedLanguage, 

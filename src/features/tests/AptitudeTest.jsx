@@ -1,5 +1,19 @@
 import React, { useState, useEffect } from 'react';
 
+import { API_BASE_URL } from '../../config/api'; // 👑 Step 1: Import the dynamic URL
+
+// Inside your request handler / useEffect block:
+const fetchQuestions = async () => {
+  try {
+    // CHANGED: Replaced http://localhost:5000 with ${API_BASE_URL}
+    const res = await fetch(`${API_BASE_URL}/api/tests/aptitude?category=${category}&difficulty=${difficulty}&topic=${topic}`);
+    const data = await res.json();
+    setQuestions(data);
+  } catch (err) {
+    console.error("API Transmission Fault:", err);
+  }
+};
+
 function AptitudeTest() {
   // Swapped to sessionStorage to clear everything automatically upon hitting browser refresh
   const [category, setCategory] = useState(() => sessionStorage.getItem('apti_category_cache'));

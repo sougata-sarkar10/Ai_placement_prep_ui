@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
 
+import { API_BASE_URL } from '../../config/api'; // 👑 Step 1: Import the dynamic URL
+
+// Inside your useEffect / fetch call:
+useEffect(() => {
+  // CHANGED: Use backticks with API_BASE_URL variable string
+  fetch(`${API_BASE_URL}/api/dashboard/metrics`)
+    .then(res => res.json())
+    .then(data => setMetrics(data))
+    .catch(err => console.error("Dashboard metric transmission fault:", err));
+}, []);
+
 function MainDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);

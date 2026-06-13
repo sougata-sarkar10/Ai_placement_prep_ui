@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../../config/api'; // Import dynamic URL helper
 
 function AuthGateway({ onAuthSuccess }) {
   const [isLoginView, setIsLoginView] = useState(true);
@@ -7,16 +8,14 @@ function AuthGateway({ onAuthSuccess }) {
 
   // Form States
   const [name, setName] = useState('');
-  const [userIdOrPhone, setUserIdOrPhone] = useState(''); // Handles standard login credentials
+  const [userIdOrPhone, setUserIdOrPhone] = useState(''); 
   const [customUserId, setCustomUserId] = useState('');   
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false); 
   
-  // Refactored State hooks for integrated Phone structures
-  const [countryCode, setCountryCode] = useState('+91');   // Presets +91 as default
+  const [countryCode, setCountryCode] = useState('+91');   
   const [phoneNumber, setPhoneNumber] = useState('');
 
-  // Supported Country Codes list array for selection dropdown
   const countryCodesList = [
     { code: '+91', label: 'IN (+91)' },
     { code: '+1',  label: 'US (+1)' },
@@ -52,7 +51,6 @@ function AuthGateway({ onAuthSuccess }) {
 
     const endpoint = isLoginView ? 'login' : 'register';
     
-    // Construct registration configurations using unified structural items
     const payload = isLoginView 
       ? { loginIdentifier: userIdOrPhone.trim(), password } 
       : { 
@@ -63,7 +61,8 @@ function AuthGateway({ onAuthSuccess }) {
         };
 
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
+      // 👑 CHANGED: Replaced hardcoded localhost with dynamic API_BASE_URL variable string
+      const res = await fetch(`${API_BASE_URL}/api/auth/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -80,17 +79,18 @@ function AuthGateway({ onAuthSuccess }) {
   };
 
   const handleGoogleOAuthRedirect = () => {
-    window.location.href = "http://localhost:5000/api/auth/google";
+    // 👑 CHANGED: Triggers redirect using dynamic URL context
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
   };
 
   const handleLinkedInOAuthRedirect = () => {
-    window.location.href = "http://localhost:5000/api/auth/linkedin";
+    // 👑 CHANGED: Triggers redirect using dynamic URL context
+    window.location.href = `${API_BASE_URL}/api/auth/linkedin`;
   };
 
   return (
     <div className="w-full max-w-md mx-auto bg-slate-950 border border-slate-850 p-8 rounded-2xl text-slate-200 shadow-2xl space-y-6 animate-fadeIn">
       
-      {/* Upper Branding Details */}
       <div className="text-center space-y-1">
         <h2 className="text-2xl font-black text-white tracking-tight">
           {isLoginView ? 'Welcome Back Developer' : 'Create Sandbox Account'}
@@ -100,30 +100,24 @@ function AuthGateway({ onAuthSuccess }) {
         </p>
       </div>
 
-      {/* Primary Authentication Form Action Context */}
       <form onSubmit={handleAuthenticationSubmit} className="space-y-4">
-        
-        {/* REGISTER ONLY FIELDS */}
         {!isLoginView && (
           <>
-            {/* Full Name Slot using Tony Stark Placeholder */}
             <div className="flex flex-col space-y-1.5">
               <label className="text-[10px] font-mono uppercase font-bold text-slate-400 tracking-wider">Full Name</label>
               <input 
                 type="text" 
                 value={name} 
                 onChange={(e) => setName(e.target.value)} 
-                placeholder="Tony Stark" // FIXED placeholder value mapping criteria
+                placeholder="Tony Stark" 
                 required 
                 className="bg-slate-900 border border-slate-800 focus:border-cyan-500 text-xs rounded-xl p-3 focus:outline-none transition-colors placeholder:text-slate-600 text-slate-200 font-medium" 
               />
             </div>
 
-            {/* INTEGRATED CELLULAR MOBILE PHONE FIELD WITH RE-STYLED DROPDOWN ROW */}
             <div className="flex flex-col space-y-1.5">
               <label className="text-[10px] font-mono uppercase font-bold text-slate-400 tracking-wider">Mobile Number (Optional)</label>
               <div className="flex gap-2">
-                {/* Custom Country Dropdown List */}
                 <select 
                   value={countryCode} 
                   onChange={(e) => setCountryCode(e.target.value)}
@@ -136,11 +130,10 @@ function AuthGateway({ onAuthSuccess }) {
                   ))}
                 </select>
 
-                {/* Base Digits Core Text Input Parameter Wrapper */}
                 <input 
                   type="tel" 
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))} // Limit value parameters strictly to numbers
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))} 
                   placeholder="9876543210"
                   className="flex-1 bg-slate-900 border border-slate-800 focus:border-cyan-500 text-xs rounded-xl p-3 focus:outline-none transition-colors placeholder:text-slate-600 text-slate-200 font-medium font-mono"
                 />
@@ -149,7 +142,6 @@ function AuthGateway({ onAuthSuccess }) {
           </>
         )}
 
-        {/* INPUT CHANNEL: Dynamic switching dependent on active view states */}
         {isLoginView ? (
           <div className="flex flex-col space-y-1.5">
             <label className="text-[10px] font-mono uppercase font-bold text-slate-400 tracking-wider">User ID or Phone Number</label>
@@ -176,7 +168,6 @@ function AuthGateway({ onAuthSuccess }) {
           </div>
         )}
 
-        {/* ACCESS SECURITY PASSWORD SLOT WITH INTEGRATED TOGGLE OPTION */}
         <div className="flex flex-col space-y-1.5">
           <label className="text-[10px] font-mono uppercase font-bold text-slate-400 tracking-wider">Account Password</label>
           <div className="relative w-full">
@@ -198,14 +189,12 @@ function AuthGateway({ onAuthSuccess }) {
           </div>
         </div>
 
-        {/* Global form errors reporting area */}
         {error && (
           <div className="text-xs text-rose-400 bg-rose-500/5 p-3 rounded-xl border border-rose-500/10 text-center font-mono leading-relaxed">
             ⚠️ {error}
           </div>
         )}
 
-        {/* DISPATCH ACTION ACTION TRIGGER */}
         <button 
           type="submit" 
           disabled={loading} 
@@ -215,7 +204,6 @@ function AuthGateway({ onAuthSuccess }) {
         </button>
       </form>
 
-      {/* --- RE-ARCHITECTED INTERACTIVE FOOTER NAVIGATOR --- */}
       <div className="text-center pt-2">
         {isLoginView ? (
           <p className="text-xs text-slate-400 font-medium">
@@ -242,7 +230,6 @@ function AuthGateway({ onAuthSuccess }) {
         )}
       </div>
 
-      {/* --- SINGLE SIGN ON FEDERATED HANDOFF WRAPPER --- */}
       <div className="flex flex-col space-y-2 pt-2 border-t border-slate-900">
         <span className="text-[10px] font-mono text-center uppercase tracking-widest text-slate-600">Or continue with sandbox identity provider</span>
         <div className="flex space-x-3">
