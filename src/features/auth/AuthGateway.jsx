@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { API_BASE_URL } from '../../config/api'; // Import dynamic URL helper
+// 👑 FIXED: Pointing directly to your centralized utility module mapping
+import { API_ROUTES } from '../../utils/apiConfig'; 
 
 function AuthGateway({ onAuthSuccess }) {
   const [isLoginView, setIsLoginView] = useState(true);
@@ -8,12 +9,13 @@ function AuthGateway({ onAuthSuccess }) {
 
   // Form States
   const [name, setName] = useState('');
-  const [userIdOrPhone, setUserIdOrPhone] = useState(''); 
-  const [customUserId, setCustomUserId] = useState('');   
+  const [userIdOrPhone, setUserIdOrPhone] = useState(''); // Unified credential field for login
+  const [customUserId, setCustomUserId] = useState('');   // Strict handle field for registration
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false); 
   
-  const [countryCode, setCountryCode] = useState('+91');   
+  // Cellular Mobile Structure states
+  const [countryCode, setCountryCode] = useState('+91');   // Default preset to India (+91)
   const [phoneNumber, setPhoneNumber] = useState('');
 
   const countryCodesList = [
@@ -49,7 +51,8 @@ function AuthGateway({ onAuthSuccess }) {
       }
     }
 
-    const endpoint = isLoginView ? 'login' : 'register';
+    // Determine the runtime path using clean properties mappings
+    const targetRoute = isLoginView ? API_ROUTES.auth.login : API_ROUTES.auth.register;
     
     const payload = isLoginView 
       ? { loginIdentifier: userIdOrPhone.trim(), password } 
@@ -61,8 +64,8 @@ function AuthGateway({ onAuthSuccess }) {
         };
 
     try {
-      // 👑 CHANGED: Replaced hardcoded localhost with dynamic API_BASE_URL variable string
-      const res = await fetch(`${API_BASE_URL}/api/auth/${endpoint}`, {
+      // 👑 CHANGED: Utilizing dynamic targetRoute calculated from your explicit object dictionary mapping
+      const res = await fetch(targetRoute, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -79,18 +82,19 @@ function AuthGateway({ onAuthSuccess }) {
   };
 
   const handleGoogleOAuthRedirect = () => {
-    // 👑 CHANGED: Triggers redirect using dynamic URL context
-    window.location.href = `${API_BASE_URL}/api/auth/google`;
+    // 👑 CHANGED: Directing handoff redirect to central identity configuration properties
+    window.location.href = API_ROUTES.auth.google;
   };
 
   const handleLinkedInOAuthRedirect = () => {
-    // 👑 CHANGED: Triggers redirect using dynamic URL context
-    window.location.href = `${API_BASE_URL}/api/auth/linkedin`;
+    // 👑 CHANGED: Directing handoff redirect to central identity configuration properties
+    window.location.href = API_ROUTES.auth.linkedin;
   };
 
   return (
     <div className="w-full max-w-md mx-auto bg-slate-950 border border-slate-850 p-8 rounded-2xl text-slate-200 shadow-2xl space-y-6 animate-fadeIn">
       
+      {/* Upper Branding Details */}
       <div className="text-center space-y-1">
         <h2 className="text-2xl font-black text-white tracking-tight">
           {isLoginView ? 'Welcome Back Developer' : 'Create Sandbox Account'}
@@ -100,7 +104,10 @@ function AuthGateway({ onAuthSuccess }) {
         </p>
       </div>
 
+      {/* Primary Authentication Form Action Context */}
       <form onSubmit={handleAuthenticationSubmit} className="space-y-4">
+        
+        {/* REGISTER ONLY FIELDS */}
         {!isLoginView && (
           <>
             <div className="flex flex-col space-y-1.5">
@@ -204,6 +211,7 @@ function AuthGateway({ onAuthSuccess }) {
         </button>
       </form>
 
+      {/* RE-ARCHITECTED INTERACTIVE FOOTER NAVIGATOR */}
       <div className="text-center pt-2">
         {isLoginView ? (
           <p className="text-xs text-slate-400 font-medium">
@@ -230,6 +238,7 @@ function AuthGateway({ onAuthSuccess }) {
         )}
       </div>
 
+      {/* SINGLE SIGN ON FEDERATED HANDOFF WRAPPER */}
       <div className="flex flex-col space-y-2 pt-2 border-t border-slate-900">
         <span className="text-[10px] font-mono text-center uppercase tracking-widest text-slate-600">Or continue with sandbox identity provider</span>
         <div className="flex space-x-3">

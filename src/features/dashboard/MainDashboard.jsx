@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../../config/api'; // Import environment-aware URL helper
+import { API_ROUTES } from '../../utils/apiConfig'; // 👑 Step 1: Import centralized API routes configuration map
 
 function MainDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 👑 UPDATED: Replaced hardcoded localhost string with clean API_BASE_URL context mapping
-    fetch(`${API_BASE_URL}/api/dashboard/metrics`)
+    // 👑 Step 2: Swap over to our dynamic, environment-aware API URL endpoints map
+    fetch(API_ROUTES.dashboard.metrics)
       .then(res => res.json())
       .then(resData => {
         if (resData.success) setData(resData.metrics);

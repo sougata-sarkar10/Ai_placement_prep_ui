@@ -4,7 +4,8 @@ import ProblemDescription from './components/ProblemDescription';
 import CodeEditor from './components/CodeEditor';
 import OutputConsole from './components/OutputConsole';
 
-import { API_BASE_URL } from "../../config/api";
+// 👑 FIXED IMPORT: Steps out exactly 2 levels to find your utils repository configuration
+import { API_ROUTES } from "../../utils/apiConfig";
 
 function CodingSandbox() {
   // Navigation Routing States
@@ -27,10 +28,12 @@ function CodingSandbox() {
   const [aiAnalysis, setAiAnalysis] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Synchronize index entities on startup out of port 5000 endpoints
+  // Synchronize index entities on startup out of dynamic endpoint targets
   useEffect(() => {
     setLoading(true);
-    fetch('http://localhost:5000/api/challenges')
+    
+    // 👑 FIXED URL: Replaced hardcoded localhost string with your clean unified API endpoint route
+    fetch(API_ROUTES.challenges || `${API_ROUTES.auth.login.replace('/auth/login', '/challenges')}`)
       .then(res => res.json())
       .then(data => {
         setProblems(data);
@@ -68,11 +71,11 @@ function CodingSandbox() {
     }
   }, [activeProblem, selectedLanguage]);
 
-  // Change your execution parameters logic to read the code directly from the callback input:
+  // Change your execution parameters logic to read the code directly from the callback input
   const handleExecuteCode = async (isSubmission = false, codeFromEditor) => {
     setIsCompiling(true);
     setActiveTab('output');
-    setConsoleOutput('Transmitting code to your local Express server proxy...');
+    setConsoleOutput('Transmitting code to execution cluster pipeline network...');
     setAiAnalysis('');
 
     // Select input criteria dynamically depending on button target actions
@@ -84,12 +87,13 @@ function CodingSandbox() {
     const dynamicCodeString = codeFromEditor || editorCode;
 
     try {
-      const response = await fetch("http://localhost:5000/api/code/run", {
+      // 👑 FIXED URL: Shifted target route entirely onto central code executor routes matching environments
+      const response = await fetch(API_ROUTES.code.run, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           language: selectedLanguage,
-          code: dynamicCodeString, // Forward the zero-lag optimized string
+          code: dynamicCodeString, 
           input: targetInput,
           problemSlug: activeProblem?.slug,
           isSubmission: isSubmission
@@ -111,7 +115,7 @@ function CodingSandbox() {
         setConsoleOutput(`Verdict: ${data.verdict} 🎉\nDuration Trace: ${data.runtime}\n\nStandard Output (stdout):\n${data.output}`);
       }
     } catch (err) {
-      setConsoleOutput("API Intercept Error: Verify that your Node backend environment is active on port 5000.");
+      setConsoleOutput("API Intercept Error: Unable to complete the compilation request across active connection boundaries.");
     } finally {
       setIsCompiling(false);
     }
