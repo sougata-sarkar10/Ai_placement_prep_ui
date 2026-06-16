@@ -1,22 +1,13 @@
 import React, { useState, useEffect } from 'react';
-
-import { API_BASE_URL } from '../../config/api'; // 👑 Step 1: Import the dynamic URL
-
-// Inside your useEffect / fetch call:
-useEffect(() => {
-  // CHANGED: Use backticks with API_BASE_URL variable string
-  fetch(`${API_BASE_URL}/api/dashboard/metrics`)
-    .then(res => res.json())
-    .then(data => setMetrics(data))
-    .catch(err => console.error("Dashboard metric transmission fault:", err));
-}, []);
+import { API_BASE_URL } from '../../config/api'; // Import environment-aware URL helper
 
 function MainDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/dashboard/metrics')
+    // 👑 UPDATED: Replaced hardcoded localhost string with clean API_BASE_URL context mapping
+    fetch(`${API_BASE_URL}/api/dashboard/metrics`)
       .then(res => res.json())
       .then(resData => {
         if (resData.success) setData(resData.metrics);
