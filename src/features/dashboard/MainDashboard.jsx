@@ -43,7 +43,7 @@ function MainDashboard() {
   const meanAccuracy = data?.aptitudeMetrics?.averageAccuracy || 0;
   const cvStats = data?.resumeProfile || { hasAnalyzed: false, extractedSkills: [], targetSector: "" };
 
-  // 👑 FIXED: Maps authentic database log indices strictly without creating synthetic mock dates
+  // Maps authentic database log indices strictly without creating synthetic mock dates
   const buildRealTimeMatrix = () => {
     const realLogs = data?.activityLog || [];
     const blocks = [];
@@ -54,13 +54,12 @@ function MainDashboard() {
       targetDate.setDate(targetDate.getDate() - i);
       const dateKey = targetDate.toISOString().split('T')[0];
 
-      // Scan for a match directly within user records
       const match = realLogs.find(log => log.date === dateKey);
       
       blocks.push({
         date: dateKey,
         count: match ? match.count : 0,
-        intensity: match ? Math.min(Math.ceil(match.count / 2), 4) : 0, // Scales color based on true solution metrics
+        intensity: match ? Math.min(Math.ceil(match.count / 2), 4) : 0, 
         monthLabel: targetDate.toLocaleString('default', { month: 'short' })
       });
     }
@@ -72,21 +71,21 @@ function MainDashboard() {
   // Distinct monthly break markers for grid layout alignment mapping
   const monthlyColumns = [];
   for (let w = 0; w < 12; w++) {
-    const weekBlocks = activityGrid.slice(w * 7, (w * 1) * 7 + 7);
+    const weekBlocks = activityGrid.slice(w * 7, w * 7 + 7);
     const primaryMonthLabel = weekBlocks[0]?.monthLabel || "";
     monthlyColumns.push({ label: primaryMonthLabel, blocks: weekBlocks });
   }
 
   const colorGrades = [
-    'bg-slate-900/40 border-slate-900',          // 0 Submissions
-    'bg-emerald-950/60 border-emerald-900/30',   // 1-2 Submissions
-    'bg-emerald-800/80 border-emerald-700/30',   // 3-4 Submissions
-    'bg-emerald-600 border-emerald-500/40',      // 5-6 Submissions
-    'bg-emerald-400 border-white/10 shadow-sm'   // 7+ Submissions peak
+    'bg-slate-900/40 border-slate-900/60',       
+    'bg-emerald-950/70 border-emerald-900/30',   
+    'bg-emerald-800/90 border-emerald-700/30',   
+    'bg-emerald-600 border-emerald-500/40',      
+    'bg-emerald-400 border-white/10 shadow-sm'   
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-1 sm:px-4 py-4 space-y-6 text-slate-200 animate-fadeIn pt-2 md:pt-0">
+    <div className="max-w-7xl mx-auto px-1 sm:px-4 py-4 space-y-6 text-slate-200 animate-fadeIn pt-2 md:pt-0 max-w-full overflow-hidden">
       
       {/* Upper Title Overview */}
       <div>
@@ -94,7 +93,7 @@ function MainDashboard() {
         <p className="text-xs text-slate-500">Real-time habit trackers, execution breakdowns, and core syllabus matrices.</p>
       </div>
 
-      {/* 📊 CORE SECTOR DATA METRICS COLUMNS ROW */}
+      {/* CORE SECTOR DATA METRICS COLUMNS ROW */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         
         {/* Sandbox Programming Activity */}
@@ -168,9 +167,9 @@ function MainDashboard() {
 
       </div>
 
-      {/* 👑 RE-ARCHITECTED GITHUB GRID: Placed squarely at the bottom, ultra-compact text blocks */}
-      <div className="bg-slate-950 border border-slate-850 p-4 rounded-2xl shadow-2xl space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-900 pb-2">
+      {/* 👑 RE-ENGINEERED COMPACT OVERFLOW-SAFE HEATMAP MATRIX */}
+      <div className="bg-slate-950 border border-slate-850 p-4 rounded-2xl shadow-2xl space-y-3 max-w-full overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-900 pb-2">
           <div className="flex items-baseline gap-2">
             <h2 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-wider">Submissions Heatmap</h2>
             <span className="text-[11px] font-mono font-bold text-slate-500">({totalSubmissions} total actions verified)</span>
@@ -182,31 +181,43 @@ function MainDashboard() {
           </div>
         </div>
 
-        {/* Scaled-down Layout Grid Container */}
-        <div className="w-full overflow-x-auto pb-1 scrollbar-thin">
-          <div className="flex gap-[4px] min-w-[580px] p-0.5">
-            {monthlyColumns.map((week, wIdx) => (
-              <div key={wIdx} className="flex-1 flex flex-col space-y-[4px]">
-                {week.blocks.map((day, dIdx) => (
-                  <div 
-                    key={dIdx} 
-                    className={`w-full aspect-square min-w-[9px] sm:min-w-[11px] rounded-[1.5px] border transition-all hover:scale-125 cursor-pointer ${colorGrades[day.intensity]}`}
-                    title={`${day.date} : ${day.count} actions compiled`}
-                  />
-                ))}
-                {/* 📆 Month labels printed cleanly beneath the corresponding columns view */}
-                {wIdx % 4 === 0 && (
-                  <span className="text-[9px] font-mono text-slate-600 font-semibold absolute mt-[102px] tracking-tight animate-fadeIn">
-                    {week.label}
-                  </span>
-                )}
-              </div>
-            ))}
+        {/* Outer scrolling chassis to prevent right side container overflow */}
+        <div className="w-full overflow-x-auto pb-2 pt-1 scrollbar-none">
+          <div className="min-w-[420px] max-w-max mx-auto sm:mx-0">
+            
+            {/* 👑 FIXED GRID BOXES SIZES: Ultra tight boxes layout mapping exactly like LeetCode */}
+            <div className="flex gap-[3px]">
+              {monthlyColumns.map((week, wIdx) => (
+                <div key={wIdx} className="w-[10px] sm:w-[12px] flex flex-col space-y-[3px] flex-shrink-0">
+                  {week.blocks.map((day, dIdx) => (
+                    <div 
+                      key={dIdx} 
+                      className={`w-full aspect-square rounded-[1px] border transition-all hover:scale-125 cursor-pointer ${colorGrades[day.intensity]}`}
+                      title={`${day.date} : ${day.count} actions compiled`}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            {/* 👑 FIXED MONTH LABELS ALIGNMENT: Renders inline right below without extending wrapper widths */}
+            <div className="flex gap-[3px] mt-1.5 select-none pointer-events-none h-3 relative">
+              {monthlyColumns.map((week, wIdx) => (
+                <div key={wIdx} className="w-[10px] sm:w-[12px] flex-shrink-0 text-center relative">
+                  {wIdx % 4 === 0 && (
+                    <span className="text-[9px] font-mono text-slate-600 font-bold uppercase tracking-tighter absolute left-0 whitespace-nowrap">
+                      {week.label}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+
           </div>
         </div>
 
         {/* Grid Footer Information Guide */}
-        <div className="flex justify-between items-center text-[9px] font-mono text-slate-600 pt-5 px-0.5">
+        <div className="flex justify-between items-center text-[9px] font-mono text-slate-600 pt-3 px-0.5 select-none">
           <span>84-day live timeline index record</span>
           <div className="flex items-center gap-1">
             <span>Less</span>
