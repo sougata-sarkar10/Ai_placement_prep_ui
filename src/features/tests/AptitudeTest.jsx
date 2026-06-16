@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-// 👑 FIXED PATHWAY IMPORT: Jump up two levels to load your unified environment configuration schema
 import { BACKEND_BASE_URL } from '../../utils/apiConfig'; 
 
 function AptitudeTest() {
-  // Swapped to sessionStorage to clear everything automatically upon hitting browser refresh
   const [category, setCategory] = useState(() => sessionStorage.getItem('apti_category_cache'));
   const [topic, setTopic] = useState(() => sessionStorage.getItem('apti_topic_cache')); 
   const [difficulty, setDifficulty] = useState(() => sessionStorage.getItem('apti_difficulty_cache'));
@@ -42,6 +40,7 @@ function AptitudeTest() {
     "Permutations and Combinations", "Probability", "Mensuration"
   ];
 
+  // 👑 FIXED: Wrapped state string updates safely to prevent early boot crashes
   useEffect(() => {
     if (category) sessionStorage.setItem('apti_category_cache', category);
     else sessionStorage.removeItem('apti_category_cache');
@@ -54,9 +53,9 @@ function AptitudeTest() {
 
     sessionStorage.setItem('apti_questions_cache', JSON.stringify(questions));
     sessionStorage.setItem('apti_currentIdx_cache', currentIdx.toString());
-    sessionStorage.setItem('apti_shuffle_cache', isShuffleActive.toString());
-    sessionStorage.setItem('apti_submitted_cache', isAnswerSubmitted.toString());
-    sessionStorage.setItem('apti_solution_cache', showSolution.toString());
+    sessionStorage.setItem('apti_shuffle_cache', String(isShuffleActive));
+    sessionStorage.setItem('apti_submitted_cache', String(isAnswerSubmitted));
+    sessionStorage.setItem('apti_solution_cache', String(showSolution));
 
     if (chosenOption) sessionStorage.setItem('apti_chosen_cache', chosenOption);
     else sessionStorage.removeItem('apti_chosen_cache');
@@ -70,7 +69,6 @@ function AptitudeTest() {
       
       const mappedDiff = difficulty === 'Basic' ? 'easy' : difficulty === 'Intermediate' ? 'medium' : 'advanced';
       
-      // 👑 CHANGED: Swapped old hardcoded localhost for our unified dynamic BACKEND_BASE_URL context
       let url = `${BACKEND_BASE_URL}/api/tests/aptitude?category=${category}&difficulty=${mappedDiff}`;
       if (category === 'quantitative' && topic) {
         url += `&topic=${encodeURIComponent(topic)}`;
@@ -79,7 +77,7 @@ function AptitudeTest() {
       fetch(url)
         .then(res => res.json())
         .then(data => {
-          setQuestions(data);
+          setQuestions(data || []);
           setCurrentIdx(0);
           resetInteractiveState();
           setIsShuffleActive(false);
@@ -140,6 +138,7 @@ function AptitudeTest() {
     resetInteractiveState();
   };
 
+  // --- RENDERING CONDITIONS CONTROL VIEW FLOWS ---
   if (!category) {
     return (
       <div className="space-y-6 animate-fadeIn">
@@ -207,16 +206,20 @@ function AptitudeTest() {
     );
   }
 
-  if (questions.length === 0) {
+  // 👑 SECURITY BOUNDS CHECK: Extracted out safely to ensure currentQuestion always loads cleanly below
+  if (!questions || questions.length === 0) {
     return (
-      <div className="text-center p-8 bg-slate-950 border border-slate-850 rounded-xl max-w-sm mx-auto space-y-3">
+      <div className="text-center p-8 bg-slate-950 border border-slate-850 rounded-xl max-w-sm mx-auto space-y-3 mt-6">
         <p className="text-xs text-slate-400 font-mono">No data matched this filter criteria array.</p>
-        <button onClick={() => setDifficulty(null)} className="text-xs text-cyan-400 font-semibold hover:underline cursor-pointer">Change Filters</button>
+        <button onClick={handleBackReset} className="text-xs text-cyan-400 font-semibold hover:underline cursor-pointer">Change Filters</button>
       </div>
     );
   }
 
   const currentQuestion = questions[currentIdx];
+
+  // Safeguard against out-of-bounds mapping errors
+  if (!currentQuestion) return null;
 
   return (
     <div className="max-w-4xl mx-auto bg-slate-950 border border-slate-850 rounded-2xl p-6 space-y-6 shadow-2xl animate-fadeIn">
