@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { BACKEND_BASE_URL } from '../../utils/apiConfig'; 
 
 function AptitudeTest() {
