@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+// 👑 FIXED: Import unified environmental mapping coordinates safely
+import { BACKEND_BASE_URL } from '../../utils/apiConfig';
 
 function MockInterview() {
-  // Setup States - Initializing directly out of the volatile sessionStorage memory layers
   const [session, setSession] = useState(() => {
     const saved = sessionStorage.getItem('interview_session_cache');
     return saved ? JSON.parse(saved) : null;
@@ -11,11 +12,10 @@ function MockInterview() {
   const [jd, setJd] = useState(() => sessionStorage.getItem('interview_jd_cache') || '');
   const [answerInput, setAnswerInput] = useState(() => sessionStorage.getItem('interview_answer_input_cache') || '');
   
-  const [file, setFile] = useState(null); // Binary file objects cannot be stringified in browser storage
+  const [file, setFile] = useState(null); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Quietly synchronize user context arrays to the background session cache
   useEffect(() => {
     sessionStorage.setItem('interview_track_cache', track);
     sessionStorage.setItem('interview_role_cache', role);
@@ -41,7 +41,8 @@ function MockInterview() {
     if (file) formData.append('resume', file);
 
     try {
-      const res = await fetch('http://localhost:5000/api/interview/start', {
+      // 👑 FIXED: Dynamic URL switching logic maps smoothly over networks
+      const res = await fetch(`${BACKEND_BASE_URL}/api/interview/start`, {
         method: 'POST',
         body: formData
       });
@@ -62,7 +63,8 @@ function MockInterview() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:5000/api/interview/respond', {
+      // 👑 FIXED: Dynamic URL routing
+      const res = await fetch(`${BACKEND_BASE_URL}/api/interview/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: session._id, answer: answerInput })
@@ -121,7 +123,6 @@ function MockInterview() {
             </div>
           </div>
 
-          {/* Optional Resume Upload Widget */}
           <div className="flex flex-col space-y-1.5 bg-slate-900/30 p-4 border border-slate-900 rounded-xl relative group">
             <label className="text-xs font-mono font-bold text-slate-400">Upload Current CV (Optional)</label>
             <input 
@@ -155,8 +156,9 @@ function MockInterview() {
     );
   }
 
+  // 👑 FIXED EXTRACTION PLACE: These extractions must occur AFTER the `if (!session)` safeguard check!
   const currentRoundIdx = session.currentRound - 1;
-  const activeQuestionItem = session.conversationLog[currentRoundIdx];
+  const activeQuestionItem = session.conversationLog?.[currentRoundIdx];
 
   // --- SCREEN 2: Active Simulation Interview Loop ---
   if (session.status === 'active') {
@@ -252,7 +254,7 @@ function MockInterview() {
 
       <div className="space-y-3">
         <h3 className="text-xs font-bold font-mono text-slate-500 uppercase tracking-wider">Conversation Transcript Archive</h3>
-        {session.conversationLog.map((log, idx) => (
+        {session.conversationLog?.map((log, idx) => (
           <div key={idx} className="bg-slate-950/60 border border-slate-900 p-4 rounded-xl space-y-2 text-xs font-sans">
             <div className="font-semibold text-cyan-400 font-mono">Question {idx + 1}: <span className="text-slate-200 font-sans">{log.question}</span></div>
             <div className="text-slate-400 bg-slate-900/40 p-2.5 border border-slate-900 rounded-lg font-medium leading-relaxed italic">
