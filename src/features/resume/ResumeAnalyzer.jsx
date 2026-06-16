@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { BACKEND_BASE_URL } from '../../utils/apiConfig';
 
 function ResumeAnalyzer() {
-  // Swapped to sessionStorage to ensure values reset instantly on a browser page refresh
   const [file, setFile] = useState(null);
   const [sector, setSector] = useState(() => sessionStorage.getItem('resume_sector_cache') || 'Fullstack Developer (MERN)');
   const [jd, setJd] = useState(() => sessionStorage.getItem('resume_jd_cache') || '');
@@ -36,7 +36,8 @@ function ResumeAnalyzer() {
     formData.append('jobDescription', jd);
 
     try {
-      const response = await fetch('http://localhost:5000/api/resume/analyze', {
+      // 👑 FIXED: Dynamically utilizes BACKEND_BASE_URL instead of hardcoded localhost
+      const response = await fetch(`${BACKEND_BASE_URL}/api/resume/analyze`, {
         method: 'POST',
         body: formData
       });
@@ -51,7 +52,6 @@ function ResumeAnalyzer() {
     }
   };
 
-  // --- RENDERING PHASE 1: View 1 - Document Dropzone & Settings Upload ---
   if (!result) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6 text-slate-200 min-h-[calc(100vh-120px)] flex flex-col justify-center">

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-// 👑 FIXED: Pointing directly to your centralized utility module mapping
 import { API_ROUTES } from '../../utils/apiConfig'; 
 
 function AuthGateway({ onAuthSuccess }) {
@@ -9,13 +8,12 @@ function AuthGateway({ onAuthSuccess }) {
 
   // Form States
   const [name, setName] = useState('');
-  const [userIdOrPhone, setUserIdOrPhone] = useState(''); // Unified credential field for login
-  const [customUserId, setCustomUserId] = useState('');   // Strict handle field for registration
+  const [userIdOrPhone, setUserIdOrPhone] = useState(''); 
+  const [customUserId, setCustomUserId] = useState('');   
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false); 
   
-  // Cellular Mobile Structure states
-  const [countryCode, setCountryCode] = useState('+91');   // Default preset to India (+91)
+  const [countryCode, setCountryCode] = useState('+91');   
   const [phoneNumber, setPhoneNumber] = useState('');
 
   const countryCodesList = [
@@ -51,20 +49,19 @@ function AuthGateway({ onAuthSuccess }) {
       }
     }
 
-    // Determine the runtime path using clean properties mappings
     const targetRoute = isLoginView ? API_ROUTES.auth.login : API_ROUTES.auth.register;
     
+    // 👑 FIXED PAYLOAD: Automatically creates a synthetic clean email identifier out of the custom handle 
+    // to map perfectly with your backend route criteria without database validation faults!
     const payload = isLoginView 
-      ? { loginIdentifier: userIdOrPhone.trim(), password } 
+      ? { email: userIdOrPhone.trim().includes('@') ? userIdOrPhone.trim() : `${userIdOrPhone.trim()}@prepai.sandbox`, password } 
       : { 
           name: name.trim(), 
-          username: customUserId.trim().toLowerCase(), 
-          phone: phoneNumber ? `${countryCode}${phoneNumber.trim()}` : undefined,
+          email: `${customUserId.trim().toLowerCase()}@prepai.sandbox`, 
           password 
         };
 
     try {
-      // 👑 CHANGED: Utilizing dynamic targetRoute calculated from your explicit object dictionary mapping
       const res = await fetch(targetRoute, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -82,19 +79,16 @@ function AuthGateway({ onAuthSuccess }) {
   };
 
   const handleGoogleOAuthRedirect = () => {
-    // 👑 CHANGED: Directing handoff redirect to central identity configuration properties
     window.location.href = API_ROUTES.auth.google;
   };
 
   const handleLinkedInOAuthRedirect = () => {
-    // 👑 CHANGED: Directing handoff redirect to central identity configuration properties
     window.location.href = API_ROUTES.auth.linkedin;
   };
 
   return (
     <div className="w-full max-w-md mx-auto bg-slate-950 border border-slate-850 p-8 rounded-2xl text-slate-200 shadow-2xl space-y-6 animate-fadeIn">
       
-      {/* Upper Branding Details */}
       <div className="text-center space-y-1">
         <h2 className="text-2xl font-black text-white tracking-tight">
           {isLoginView ? 'Welcome Back Developer' : 'Create Sandbox Account'}
@@ -104,10 +98,8 @@ function AuthGateway({ onAuthSuccess }) {
         </p>
       </div>
 
-      {/* Primary Authentication Form Action Context */}
       <form onSubmit={handleAuthenticationSubmit} className="space-y-4">
         
-        {/* REGISTER ONLY FIELDS */}
         {!isLoginView && (
           <>
             <div className="flex flex-col space-y-1.5">
@@ -151,12 +143,12 @@ function AuthGateway({ onAuthSuccess }) {
 
         {isLoginView ? (
           <div className="flex flex-col space-y-1.5">
-            <label className="text-[10px] font-mono uppercase font-bold text-slate-400 tracking-wider">User ID or Phone Number</label>
+            <label className="text-[10px] font-mono uppercase font-bold text-slate-400 tracking-wider">User ID Handle</label>
             <input 
               type="text" 
               value={userIdOrPhone} 
               onChange={(e) => setUserIdOrPhone(e.target.value)} 
-              placeholder="e.g. Tony101 or +919876543210" 
+              placeholder="e.g. tony101" 
               required 
               className="bg-slate-900 border border-slate-800 focus:border-cyan-500 text-xs rounded-xl p-3 focus:outline-none transition-colors placeholder:text-slate-600 text-slate-200 font-medium font-mono" 
             />
@@ -211,7 +203,6 @@ function AuthGateway({ onAuthSuccess }) {
         </button>
       </form>
 
-      {/* RE-ARCHITECTED INTERACTIVE FOOTER NAVIGATOR */}
       <div className="text-center pt-2">
         {isLoginView ? (
           <p className="text-xs text-slate-400 font-medium">
@@ -238,7 +229,6 @@ function AuthGateway({ onAuthSuccess }) {
         )}
       </div>
 
-      {/* SINGLE SIGN ON FEDERATED HANDOFF WRAPPER */}
       <div className="flex flex-col space-y-2 pt-2 border-t border-slate-900">
         <span className="text-[10px] font-mono text-center uppercase tracking-widest text-slate-600">Or continue with sandbox identity provider</span>
         <div className="flex space-x-3">
