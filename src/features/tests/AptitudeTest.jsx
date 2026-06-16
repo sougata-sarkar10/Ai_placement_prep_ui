@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BACKEND_BASE_URL } from '../../utils/apiConfig'; 
 
 function AptitudeTest() {
@@ -40,7 +40,6 @@ function AptitudeTest() {
     "Permutations and Combinations", "Probability", "Mensuration"
   ];
 
-  // 👑 FIXED: Wrapped state string updates safely to prevent early boot crashes
   useEffect(() => {
     if (category) sessionStorage.setItem('apti_category_cache', category);
     else sessionStorage.removeItem('apti_category_cache');
@@ -141,7 +140,7 @@ function AptitudeTest() {
   // --- RENDERING CONDITIONS CONTROL VIEW FLOWS ---
   if (!category) {
     return (
-      <div className="space-y-6 animate-fadeIn">
+      <div className="space-y-6 animate-fadeIn pt-2 sm:pt-0">
         <div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">Aptitude Training Ground</h1>
           <p className="text-xs text-slate-400">Select a core syllabus competency area to begin placement preparation.</p>
@@ -162,8 +161,16 @@ function AptitudeTest() {
 
   if (category === 'quantitative' && !topic) {
     return (
-      <div className="space-y-6 animate-fadeIn">
-        <button onClick={handleBackReset} className="text-xs text-slate-500 hover:text-cyan-400 font-mono uppercase tracking-wider cursor-pointer">← Back to Categories</button>
+      <div className="space-y-6 animate-fadeIn pt-2 sm:pt-0">
+        {/* 👑 FIXED BACK BUTTON: Highly recognizable tactile UI element */}
+        <div className="flex items-center">
+          <button 
+            onClick={handleBackReset} 
+            className="w-full sm:w-auto text-xs font-bold text-slate-300 hover:text-cyan-400 flex items-center justify-center gap-2 bg-slate-900 border border-slate-800 hover:border-cyan-500/30 px-5 py-3 rounded-xl transition-all shadow-lg cursor-pointer active:scale-[0.98]"
+          >
+            <span>⬅️</span> Back to Categories
+          </button>
+        </div>
         <div>
           <h1 className="text-xl font-extrabold text-white">Quantitative Analytics Hub</h1>
           <p className="text-xs text-slate-500">Pick a specific target chapter module to isolate preparation criteria.</p>
@@ -179,8 +186,16 @@ function AptitudeTest() {
 
   if (!difficulty) {
     return (
-      <div className="space-y-6 animate-fadeIn">
-        <button onClick={handleBackReset} className="text-xs text-slate-500 hover:text-cyan-400 font-mono uppercase tracking-wider cursor-pointer">← Back to Previous Selection</button>
+      <div className="space-y-6 animate-fadeIn pt-2 sm:pt-0">
+        {/* 👑 FIXED BACK BUTTON: Highly recognizable tactile UI element */}
+        <div className="flex items-center">
+          <button 
+            onClick={handleBackReset} 
+            className="w-full sm:w-auto text-xs font-bold text-slate-300 hover:text-cyan-400 flex items-center justify-center gap-2 bg-slate-900 border border-slate-800 hover:border-cyan-500/30 px-5 py-3 rounded-xl transition-all shadow-lg cursor-pointer active:scale-[0.98]"
+          >
+            <span>⬅️</span> Back to Previous Selection
+          </button>
+        </div>
         <div>
           <h1 className="text-xl font-extrabold text-white">Select Assessment Complexity</h1>
           <p className="text-xs text-slate-500">Isolate problems based on difficulty tiers.</p>
@@ -206,41 +221,47 @@ function AptitudeTest() {
     );
   }
 
-  // 👑 SECURITY BOUNDS CHECK: Extracted out safely to ensure currentQuestion always loads cleanly below
   if (!questions || questions.length === 0) {
     return (
       <div className="text-center p-8 bg-slate-950 border border-slate-850 rounded-xl max-w-sm mx-auto space-y-3 mt-6">
         <p className="text-xs text-slate-400 font-mono">No data matched this filter criteria array.</p>
-        <button onClick={handleBackReset} className="text-xs text-cyan-400 font-semibold hover:underline cursor-pointer">Change Filters</button>
+        <button onClick={handleBackReset} className="w-full text-xs text-cyan-400 font-semibold hover:underline cursor-pointer bg-transparent border-0 mt-2">Change Filters</button>
       </div>
     );
   }
 
   const currentQuestion = questions[currentIdx];
 
-  // Safeguard against out-of-bounds mapping errors
   if (!currentQuestion) return null;
 
   return (
-    <div className="max-w-4xl mx-auto bg-slate-950 border border-slate-850 rounded-2xl p-6 space-y-6 shadow-2xl animate-fadeIn">
+    <div className="max-w-4xl mx-auto bg-slate-950 border border-slate-850 rounded-2xl p-4 sm:p-6 space-y-6 shadow-2xl animate-fadeIn mt-2 sm:mt-0">
+      {/* 👑 MOBILE ACCESSIBILITY RE-GRID: Standard rows fold stack-wise beautifully on small viewports */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-900 pb-4">
-        <button onClick={handleBackReset} className="text-xs text-slate-500 hover:text-cyan-400 font-mono uppercase tracking-wider cursor-pointer">⏮ Leave Test Block</button>
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-          <button onClick={toggleShuffleOrder} className={`px-3 py-1.5 border rounded-xl font-mono text-[11px] font-bold cursor-pointer transition-all ${isShuffleActive ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'}`}>{isShuffleActive ? '🔀 Shuffle Mode Enabled' : '🔢 Order: Sequential'}</button>
-          <form onSubmit={handleSearchSubmit} className="flex items-center bg-slate-900 border border-slate-800 rounded-xl overflow-hidden px-2.5 py-1">
-            <span className="text-slate-600 text-xs font-mono font-bold mr-1">Q#</span>
-            <input type="text" placeholder="Jump to..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent text-xs text-slate-300 font-mono focus:outline-none w-16" />
+        <button 
+          onClick={handleBackReset} 
+          className="w-full sm:w-auto text-xs font-bold text-slate-400 hover:text-cyan-400 flex items-center justify-center gap-1.5 bg-slate-900 border border-slate-800 px-4 py-2.5 rounded-xl transition-all cursor-pointer"
+        >
+          ⏮ Leave Test Block
+        </button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <button onClick={toggleShuffleOrder} className={`px-3 py-2.5 sm:py-1.5 border rounded-xl font-mono text-[11px] font-bold cursor-pointer transition-all ${isShuffleActive ? 'bg-cyan-500/10 border-cyan-400 text-cyan-400' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'}`}>{isShuffleActive ? '🔀 Shuffle Mode Enabled' : '🔢 Order: Sequential'}</button>
+          <form onSubmit={handleSearchSubmit} className="flex items-center justify-between sm:justify-start bg-slate-900 border border-slate-800 rounded-xl overflow-hidden px-3 py-2 sm:py-1">
+            <div className="flex items-center">
+              <span className="text-slate-600 text-xs font-mono font-bold mr-1">Q#</span>
+              <input type="text" placeholder="Jump to..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent text-xs text-slate-300 font-mono focus:outline-none w-20 sm:w-16" />
+            </div>
             <button type="submit" className="text-slate-400 hover:text-cyan-400 text-xs font-bold cursor-pointer font-sans px-1">➔</button>
           </form>
         </div>
       </div>
 
-      <div className="flex justify-between items-center text-xs font-mono text-slate-500 px-1">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5 text-xs font-mono text-slate-500 px-1">
         <span>Chapter: <span className="text-slate-400 font-semibold font-sans">{topic || "General Reasoning"}</span></span>
-        <span>Array Tracking: {currentIdx + 1} / {questions.length} (Ref ID: #{currentQuestion.questionNumber})</span>
+        <span>Tracking: {currentIdx + 1} / {questions.length} (Ref ID: #{currentQuestion.questionNumber})</span>
       </div>
 
-      <div className="text-sm sm:text-base font-semibold text-slate-100 leading-relaxed whitespace-pre-wrap bg-slate-900/20 p-5 rounded-xl border border-slate-900/60 font-sans shadow-inner">
+      <div className="text-sm sm:text-base font-semibold text-slate-100 leading-relaxed whitespace-pre-wrap bg-slate-900/20 p-4 sm:p-5 rounded-xl border border-slate-900/60 font-sans shadow-inner">
         <span className="text-cyan-500 font-mono mr-1">{currentQuestion.questionNumber}.</span> {currentQuestion.questionText}
       </div>
 
@@ -259,11 +280,11 @@ function AptitudeTest() {
 
           return (
             <button key={idx} onClick={() => !isAnswerSubmitted && setChosenOption(option)} disabled={isAnswerSubmitted} className={`w-full text-left px-4 py-3.5 rounded-xl border transition-all text-xs font-medium flex justify-between items-center ${optionStyle} ${!isAnswerSubmitted ? 'cursor-pointer' : ''}`}>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-black text-slate-500 bg-slate-900 border border-slate-850 px-1.5 py-0.5 rounded">{String.fromCharCode(65 + idx)}</span>
-                <span>{option}</span>
+              <div className="flex items-center gap-2 max-w-[90%]">
+                <span className="text-[10px] font-mono font-black text-slate-500 bg-slate-900 border border-slate-850 px-1.5 py-0.5 rounded flex-shrink-0">{String.fromCharCode(65 + idx)}</span>
+                <span className="truncate sm:whitespace-normal">{option}</span>
               </div>
-              <div className="w-4 h-4 rounded-full border border-slate-800 flex items-center justify-center text-[10px] font-black">
+              <div className="w-4 h-4 rounded-full border border-slate-800 flex items-center justify-center text-[10px] font-black flex-shrink-0">
                 {isAnswerSubmitted && isCorrect && "✓"}
                 {isAnswerSubmitted && isChosen && !isCorrect && "✗"}
               </div>
@@ -272,12 +293,14 @@ function AptitudeTest() {
         })}
       </div>
 
-      <div className="flex justify-between items-center pt-4 border-t border-slate-900">
-        <button onClick={() => setShowSolution(!showSolution)} disabled={!isAnswerSubmitted} className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-slate-500 hover:text-slate-300 border border-slate-900 disabled:opacity-20 cursor-pointer">{showSolution ? 'Hide Solution ▲' : 'View IndiaBIX Solution 👁️‍'}</button>
+      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-4 border-t border-slate-900">
+        <button onClick={() => setShowSolution(!showSolution)} disabled={!isAnswerSubmitted} className="px-3 py-3 sm:py-1.5 rounded-lg text-xs font-mono font-bold text-slate-500 hover:text-slate-300 border border-slate-900 disabled:opacity-20 cursor-pointer text-center">
+          {showSolution ? 'Hide Solution ▲' : 'View IndiaBIX Solution 👁️‍'}
+        </button>
         {!isAnswerSubmitted ? (
-          <button onClick={() => setIsAnswerSubmitted(true)} disabled={!chosenOption} className="px-6 py-1.5 rounded-lg font-bold bg-cyan-400 text-slate-950 hover:bg-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed text-xs cursor-pointer transition-all uppercase tracking-wider font-sans">Verify Choice</button>
+          <button onClick={() => setIsAnswerSubmitted(true)} disabled={!chosenOption} className="px-6 py-3 sm:py-1.5 rounded-lg font-bold bg-cyan-400 text-slate-950 hover:bg-cyan-500 disabled:opacity-30 disabled:cursor-not-allowed text-xs cursor-pointer transition-all uppercase tracking-wider font-sans text-center">Verify Choice</button>
         ) : (
-          <button onClick={() => { if (currentIdx + 1 < questions.length) { setCurrentIdx(prev => prev + 1); resetInteractiveState(); } }} disabled={currentIdx + 1 === questions.length} className="px-6 py-1.5 rounded-lg font-bold bg-slate-100 text-slate-950 hover:bg-white disabled:opacity-20 text-xs cursor-pointer transition-all uppercase tracking-wider font-sans">Next Question ➔</button>
+          <button onClick={() => { if (currentIdx + 1 < questions.length) { setCurrentIdx(prev => prev + 1); resetInteractiveState(); } }} disabled={currentIdx + 1 === questions.length} className="px-6 py-3 sm:py-1.5 rounded-lg font-bold bg-slate-100 text-slate-950 hover:bg-white disabled:opacity-20 text-xs cursor-pointer transition-all uppercase tracking-wider font-sans text-center">Next Question ➔</button>
         )}
       </div>
 

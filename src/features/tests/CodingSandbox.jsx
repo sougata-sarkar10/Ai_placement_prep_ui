@@ -3,17 +3,15 @@ import ProblemDashboard from './components/ProblemDashboard';
 import ProblemDescription from './components/ProblemDescription';
 import CodeEditor from './components/CodeEditor';
 import OutputConsole from './components/OutputConsole';
-
-// 👑 FIXED IMPORT: Steps out exactly 2 levels to find your utils repository configuration
 import { API_ROUTES } from "../../utils/apiConfig";
 
 function CodingSandbox() {
   // Navigation Routing States
   const [problems, setProblems] = useState([]);
   const [filteredProblems, setFilteredProblems] = useState([]);
-  const [activeProblem, setActiveProblem] = useState(null); // null = Dashboard View, object = Split Sandbox
+  const [activeProblem, setActiveProblem] = useState(null); 
   
-  // Searching & Dynamic Selection Targets
+  // Searching & Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('All');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
@@ -28,16 +26,31 @@ function CodingSandbox() {
   const [aiAnalysis, setAiAnalysis] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Synchronize index entities on startup out of dynamic endpoint targets
+  // 👑 OPTIMIZATION: High-Speed Stale-While-Revalidate Caching Layer Engine
   useEffect(() => {
-    setLoading(true);
+    const cachedData = sessionStorage.getItem('prepai_leetcode_cache');
     
-    // 👑 FIXED URL: Replaced hardcoded localhost string with your clean unified API endpoint route
-    fetch(API_ROUTES.challenges || `${API_ROUTES.auth.login.replace('/auth/login', '/challenges')}`)
+    if (cachedData) {
+      // 🚀 INSTANT LOAD: Mount the components immediately using cached frames
+      const parsed = JSON.parse(cachedData);
+      setProblems(parsed);
+      setFilteredProblems(parsed);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+    
+    // Background pipeline synchronization synchronization fetch pass
+    const targetEndpoint = API_ROUTES.challenges || `${API_ROUTES.auth.login.replace('/auth/login', '/challenges')}`;
+    
+    fetch(targetEndpoint)
       .then(res => res.json())
       .then(data => {
-        setProblems(data);
-        setFilteredProblems(data);
+        if (Array.isArray(data)) {
+          setProblems(data);
+          setFilteredProblems(data);
+          sessionStorage.setItem('prepai_leetcode_cache', JSON.stringify(data));
+        }
         setLoading(false);
       })
       .catch(err => {
@@ -46,12 +59,12 @@ function CodingSandbox() {
       });
   }, []);
 
-  // Compute Search Filters on-the-fly
+  // Compute Search Filters dynamically
   useEffect(() => {
-    let result = problems;
+    let result = problems || [];
 
     if (searchQuery) {
-      result = result.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()));
+      result = result.filter(p => p.title?.toLowerCase().includes(searchQuery.toLowerCase()));
     }
     if (selectedDifficulty !== 'All') {
       result = result.filter(p => p.difficulty === selectedDifficulty);
@@ -63,7 +76,7 @@ function CodingSandbox() {
     setFilteredProblems(result);
   }, [searchQuery, selectedDifficulty, selectedTopic, problems]);
 
-  // Synchronize Monaco editor starters
+  // Synchronize Monaco editor text setups
   useEffect(() => {
     if (activeProblem) {
       const match = activeProblem.starterCode?.find(c => c.language === selectedLanguage);
@@ -71,23 +84,19 @@ function CodingSandbox() {
     }
   }, [activeProblem, selectedLanguage]);
 
-  // Change your execution parameters logic to read the code directly from the callback input
   const handleExecuteCode = async (isSubmission = false, codeFromEditor) => {
     setIsCompiling(true);
     setActiveTab('output');
     setConsoleOutput('Transmitting code to execution cluster pipeline network...');
     setAiAnalysis('');
 
-    // Select input criteria dynamically depending on button target actions
     const targetInput = isSubmission 
       ? activeProblem?.hiddenTestCases?.[0]?.input || "" 
       : customInput;
 
-    // Use the live incoming code from our ref layer fallback
     const dynamicCodeString = codeFromEditor || editorCode;
 
     try {
-      // 👑 FIXED URL: Shifted target route entirely onto central code executor routes matching environments
       const response = await fetch(API_ROUTES.code.run, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -108,31 +117,29 @@ function CodingSandbox() {
 
       if (data.verdict !== "Accepted") {
         setConsoleOutput(`Verdict: ${data.verdict} ✗\nDuration Trace: ${data.runtime}\n\nError Dump:\n${data.error || 'Check standard outputs.'}`);
-
-        // WIRE UP LIVE DATA: Catch the real Gemini analysis stream and map it to your active hook!
         setAiAnalysis(data.aiAnalysis || "AI Debugger was unable to analyze this trace signature.");
       } else {
         setConsoleOutput(`Verdict: ${data.verdict} 🎉\nDuration Trace: ${data.runtime}\n\nStandard Output (stdout):\n${data.output}`);
       }
     } catch (err) {
-      setConsoleOutput("API Intercept Error: Unable to complete the compilation request across active connection boundaries.");
+      setConsoleOutput("API Intercept Error: Unable to complete the compilation request.");
     } finally {
       setIsCompiling(false);
     }
   };
 
-  const uniqueTopics = ['All', ...new Set(problems.map(p => p.topic).filter(Boolean))];
+  const uniqueTopics = ['All', ...new Set((problems || []).map(p => p.topic).filter(Boolean))];
 
-  if (loading) {
+  if (loading && problems.length === 0) {
     return (
-      <div className="h-96 flex flex-col items-center justify-center text-center space-y-3">
-        <div className="w-10 h-10 border-4 border-t-cyan-400 border-slate-800 rounded-full animate-spin" />
-        <p className="text-sm font-mono text-slate-400">Loading your live LeetCode data matrix engine...</p>
+      <div className="h-96 flex flex-col items-center justify-center text-center space-y-3 px-4">
+        <div className="w-9 h-9 border-3 border-t-cyan-400 border-slate-900 rounded-full animate-spin" />
+        <p className="text-xs font-mono text-slate-500">Assembling problem matrix cache indices...</p>
       </div>
     );
   }
 
-  // --- RENDERING ROUTE 1: Clean Dashboard Problem Picker Grid Box View ---
+  // --- VIEW 1: Filterable Problem Explorer Dashboard Panel Grid ---
   if (!activeProblem) {
     return (
       <ProblemDashboard 
@@ -145,29 +152,36 @@ function CodingSandbox() {
         setSelectedTopic={setSelectedTopic}
         uniqueTopics={uniqueTopics}
         onSelectProblem={(prob) => { setActiveProblem(prob); setAiAnalysis(''); }}
-        onBackToMainMenu={() => console.log("Navigating cleanly back to dashboard root landing pages...")}
+        onBackToMainMenu={() => console.log("Navigating cleanly back to root landing pages...")}
       />
     );
   }
 
-  // --- RENDERING ROUTE 2: Split-pane Workspace Layout Engine View ---
+  // --- VIEW 2: Adaptive, Split-Pane Code Sandbox Workspace Layout ---
   return (
-    <div className="flex flex-col space-y-4 h-[calc(100vh-100px)] px-2">
-      <div className="flex items-center">
+    <div className="flex flex-col space-y-4 min-h-[calc(100vh-140px)] md:h-[calc(100vh-100px)] px-1 sm:px-2 pb-6">
+      
+      {/* 👑 FIXED MOBILE BACK NAVIGATION BAR BAR: Massive, recognizable, easy-to-tap tactile control anchor */}
+      <div className="flex items-center pt-2 sm:pt-0">
         <button 
           onClick={() => setActiveProblem(null)}
-          className="text-xs font-semibold text-slate-400 hover:text-cyan-400 flex items-center gap-1.5 bg-slate-950 border border-slate-850 hover:border-cyan-500/20 px-4 py-2 rounded-lg transition-all shadow cursor-pointer"
+          className="w-full sm:w-auto text-xs font-bold text-slate-300 hover:text-cyan-400 flex items-center justify-center gap-2 bg-slate-900 border border-slate-800 hover:border-cyan-500/30 px-5 py-3 rounded-xl transition-all shadow-lg cursor-pointer active:scale-[0.98]"
         >
-          🗂️ ← Back to Problems List
+          <span>⬅️</span> Back to Challenges Directory
         </button>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-4 overflow-hidden h-full pb-2">
-        <div className="xl:col-span-5 h-full overflow-hidden">
+      {/* 👑 MOBILE-READY GRID SYSTEM: Stacks as single columns sequentially on tablets/phones, drops down grid layouts on desktops */}
+      <div className="flex-1 flex flex-col xl:grid xl:grid-cols-12 gap-4 overflow-visible xl:overflow-hidden h-full">
+        
+        {/* Left Side: Challenge Definition Section */}
+        <div className="xl:col-span-5 w-full xl:h-full overflow-visible xl:overflow-hidden bg-slate-950 rounded-xl">
           <ProblemDescription problem={activeProblem} />
         </div>
-        <div className="xl:col-span-7 flex flex-col gap-4 h-full overflow-hidden">
-          <div className="flex-1 min-h-[350px]">
+        
+        {/* Right Side: Execution IDE and Output Dashboard panels */}
+        <div className="xl:col-span-7 flex flex-col gap-4 w-full xl:h-full overflow-visible xl:overflow-hidden">
+          <div className="flex-1 min-h-[380px] sm:min-h-[450px] xl:min-h-0">
             <CodeEditor 
               selectedLanguage={selectedLanguage}
               setSelectedLanguage={setSelectedLanguage}
@@ -176,17 +190,22 @@ function CodingSandbox() {
               onRun={(code) => handleExecuteCode(false, code)}
               onSubmit={(code) => handleExecuteCode(true, code)}
               isCompiling={isCompiling}
+              problemSlug={activeProblem.slug}
             />
           </div>
-          <OutputConsole 
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            customInput={customInput}
-            setCustomInput={setCustomInput}
-            consoleOutput={consoleOutput}
-            aiAnalysis={aiAnalysis}
-          />
+          
+          <div className="w-full overflow-visible xl:overflow-hidden">
+            <OutputConsole 
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              customInput={customInput}
+              setCustomInput={setCustomInput}
+              consoleOutput={consoleOutput}
+              aiAnalysis={aiAnalysis}
+            />
+          </div>
         </div>
+
       </div>
     </div>
   );
