@@ -90,11 +90,12 @@ function App() {
         onOpenAuth={() => setShowAuthModal(true)} 
       />
       
-      <main className="flex-1 min-h-screen overflow-y-auto p-6 lg:p-10">
-        <div className="max-w-7xl mx-auto">
-          {renderContent()}
-        </div>
-      </main>
+      {/* 👑 FIXED MOBILE APP WRAPPER: Added pt-20 on small mobile devices to make room for the fixed navbar */}
+    <main className="flex-1 min-h-screen overflow-y-auto p-4 sm:p-6 lg:p-10 pt-20 md:pt-10">
+      <div className="max-w-7xl mx-auto w-full">
+        {renderContent()}
+      </div>
+    </main>
 
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fadeIn">
